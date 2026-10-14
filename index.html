@@ -88,9 +88,10 @@ dl.kv dt{color:var(--mute)}dl.kv dd{margin:0}
 .ph-child{background:#9db2c4!important}.ph-acad{background:#6aa6c9!important}.ph-genin{background:#58a36a!important}.ph-chunin{background:#d3a53a!important}.ph-jonin{background:#d4662f!important}.ph-anbu{background:#5b4a7a!important}.ph-rogue{background:#9a2f2f!important}.ph-civ{background:#b9926a!important}.ph-ret{background:#8a97a3!important}.ph-dead{background:#1d2433!important}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
 /* sheet */
-#sheetbg{position:fixed;inset:0;background:rgba(20,26,38,.5);z-index:50;display:none;align-items:flex-end;justify-content:center}
+#sheetbg{position:fixed;inset:0;background:rgba(20,26,38,.5);z-index:50;display:none;align-items:center;justify-content:center;padding:16px}
 #sheetbg.on{display:flex}
-#sheet{background:var(--card);width:100%;max-width:560px;max-height:88vh;overflow:auto;border-radius:18px 18px 0 0;padding:20px 18px 28px;animation:up .22s ease-out}
+#sheet{background:var(--card);width:100%;max-width:560px;max-height:84vh;overflow:auto;border-radius:18px;padding:20px 18px 22px;animation:pop .2s ease-out;box-shadow:0 18px 50px rgba(0,0,0,.35)}
+@keyframes pop{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
 @keyframes up{from{transform:translateY(40px);opacity:.4}to{transform:none;opacity:1}}
 #sheet h2{margin:0 0 6px;font-size:21px}
 #sheet p.b{margin:0 0 14px;color:#2c3445}
@@ -174,9 +175,19 @@ img.shot{width:100%;border:1px solid var(--line);border-radius:8px;margin:6px 0 
 @keyframes rkin{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}
 
 .chk.sm{margin:6px 0 0;font-size:13px}.chk.sm input{width:16px;height:16px}
+
+#sheetbg.peek{display:none!important}
+#peekbar{position:fixed;left:0;right:0;bottom:0;z-index:60;padding:10px 16px calc(10px + env(safe-area-inset-bottom));background:rgba(20,26,38,.88);justify-content:center}
+#peekbar .btn{max-width:560px;margin:0}
+.peekb{float:right;margin:0 0 6px 8px}
+.logbox{max-height:15.5em;overflow-y:auto;overscroll-behavior:contain;padding-right:4px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 12px;margin-top:10px;font-size:12.5px;color:var(--mute)}
+.legend span{display:inline-flex;align-items:center;gap:5px}.legend i{width:12px;height:12px;border-radius:3px;display:inline-block}
+.focus{margin:10px 0 12px;padding:10px 12px;background:var(--bg2,rgba(0,0,0,.04));border-radius:12px}
+.focus .fh{font-size:12.5px;font-weight:700;color:var(--mute);margin-bottom:6px}
 </style></head><body>
 <div id="home" class="view"></div><div id="birth" class="view"></div><div id="life" class="view"></div><div id="death" class="view"></div>
-<div id="sheetbg"><div id="sheet" role="dialog" aria-modal="true"></div></div>
+<div id="sheetbg"><div id="sheet" role="dialog" aria-modal="true"></div></div><div id="peekbar" style="display:none"><button class="btn" id="peekbtn">선택지 다시 열기</button></div>
 <script>
 // ================= DATA =================
 const NK=['fire','wind','water','earth','lightning'];
@@ -199,14 +210,14 @@ const COMBOS=[
 ];
 const NID_GREAT=['fire','wind','water','lightning','earth'];
 
-const JOBS={'농부':1,'소작농':.6,'어부':1,'행상인':1.2,'대장장이':2,'목수':1.7,'약초 상인':1.7,'주점 주인':2.2,'식당 주인':2,'라멘 가게 주인':2,'찻집 주인':1.8,'여관 주인':2.6,'의원(비닌자 의사)':3.2,'서점 주인':1.9,'포목점 주인':2,'꽃집 주인':1.4,'닌자도구·무기 상점 주인':2.6,'대상인':4,'도박장 딜러':2,'극단 배우':1.1,'서당 선생':1.6,'전령·우편 배달':1.3,'건축 인부':1.2,'건축업자':2.6,'과자 가게 주인':1.8,'단고 가게 주인':1.7,'닌자도구 공방 장인':2.4,'사막 대상':2.5,'인형 장인':2.8,'물장수':1,'선인장 농부':.9,'선원':1.4,'참치잡이 어부':1.5,'조선공':2,'등대지기':1.2,'광부':1.3,'산악 가이드':1.6,'목동':.9,'채석공':1.3,'석공':1.8,'폭약 기술자':2.4,'우산 장인':1.6,'병기 공장 노동자':1.5,'다리 건설 인부':1.3,'찻잎 농부':1,'길목 찻집 주인':1.7,'경주마 사육사':1.8,'사무라이':2.6,'검 대장장이':2.8,'온천 여관 주인':3,'목욕탕 점원':1,'봉인지 장인':2.4,'술집 점원':1.2,'대명의 가신':3.5,'병참 보급병':1.3,'마을 병원 간호사':2};
+const JOBS={'농부':1,'소작농':.6,'어부':1,'행상인':1.2,'대장장이':2,'목수':1.7,'약초 상인':1.7,'주점 주인':2.2,'식당 주인':2,'라멘 가게 주인':2,'찻집 주인':1.8,'여관 주인':2.6,'의원(비닌자 의사)':3.2,'서점 주인':1.9,'포목점 주인':2,'꽃집 주인':1.4,'닌자도구·무기 상점 주인':2.6,'대상인':4,'도박장 딜러':2,'극단 배우':1.1,'서당 선생':1.6,'전령·우편 배달':1.3,'건축 인부':1.2,'건축업자':2.6,'과자 가게 주인':1.8,'단고 가게 주인':1.7,'닌자도구 공방 장인':2.4,'사막 대상':2.5,'인형 장인':2.8,'물장수':1,'선인장 농부':.9,'선원':1.4,'참치잡이 어부':1.5,'조선공':2,'등대지기':1.2,'광부':1.3,'산악 가이드':1.6,'목동':.9,'채석공':1.3,'석공':1.8,'폭약 기술자':2.4,'우산 장인':1.6,'병기 공장 노동자':1.5,'다리 건설 인부':1.3,'찻잎 농부':1,'길목 찻집 주인':1.7,'경주마 사육사':1.8,'사무라이':2.6,'검 대장장이':2.8,'온천 여관 주인':3,'목욕탕 점원':1,'봉인지 장인':2.4,'술집 점원':1.2,'영주의 가신':3.5,'병참 보급병':1.3,'마을 병원 간호사':2};
 const GEN=['농부','어부','행상인','대장장이','목수','약초 상인','주점 주인','식당 주인','찻집 주인','여관 주인','서점 주인','포목점 주인','도박장 딜러','극단 배우','서당 선생','전령·우편 배달','건축 인부','과자 가게 주인','술집 점원','소작농'];
 
 const NATIONS={
 fire:{id:'fire',name:'불의 나라',vil:'나뭇잎 마을',kj:'葉',col:'#d4561f',col2:'#fbe4d6',type:'great',hid:true,w:20,bias:'fire',vs:.5,clanP:.3,ldr:'호카게',from:-90,to:999,
- desc:'숲이 우거진 풍요로운 대국. 나뭇잎 마을은 "불의 의지"를 내세우는 닌자 마을로 호카게가 이끈다. 마을 밖에도 대명의 도시와 농촌이 넓게 펼쳐져 있다.',
+ desc:'숲이 우거진 풍요로운 대국. 나뭇잎 마을은 "불의 의지"를 내세우는 닌자 마을로 호카게가 이끈다. 마을 밖에도 영주의 도시와 농촌이 넓게 펼쳐져 있다.',
  vp:['나뭇잎 마을 중심가','나뭇잎 마을 상점가','나뭇잎 마을 외곽 주택가','나뭇잎 마을 일족 거주지','나뭇잎 마을 동쪽 훈련장 근처','나뭇잎 마을 병원 뒷골목'],
- tp:['불의 나라 수도 근교 도시','온천이 있는 산길 마을','국경 근처 상업 마을','대명 영지의 성하마을','항구 마을'],
+ tp:['불의 나라 수도 근교 도시','온천이 있는 산길 마을','국경 근처 상업 마을','영주 영지의 성하마을','항구 마을'],
  rp:['숲속 외딴 농가','산골짜기 화전 마을','강가의 작은 마을'],
  jobs:['단고 가게 주인','라멘 가게 주인','닌자도구 공방 장인','닌자도구·무기 상점 주인','마을 병원 간호사']},
 wind:{id:'wind',name:'바람의 나라',vil:'모래 마을',kj:'砂',col:'#c0903a',col2:'#f6e8cb',type:'great',hid:true,w:11,bias:'wind',vs:.5,clanP:.14,ldr:'카제카게',from:-90,to:999,
@@ -269,7 +280,7 @@ const NID=Object.keys(NATIONS);
 
 const CLANS={
  uchiha:{n:'우치하',nid:'fire',w:5,nat:['fire'],to:7,kg:'사륜안(写輪眼)',d:'강렬한 감정을 계기로 눈에 문양이 떠오르는 일족. 화둔에 뛰어난 재능을 보인다.',tal:12,pot:8},
- hyuga:{n:'휴가',nid:'fire',w:4,nat:[],kg:'백안(白眼)',d:'360도 시야와 투시를 지닌 일족. 본가와 분가로 나뉘는 엄격한 가풍이 있다.',tal:10,pot:5},
+ hyuga:{n:'휴우가',nid:'fire',w:4,nat:[],kg:'백안(白眼)',d:'360도 시야와 투시를 지닌 일족. 본가와 분가로 나뉘는 엄격한 가풍이 있다.',tal:10,pot:5},
  senju:{n:'센쥬',nid:'fire',w:3,nat:['water','earth'],kg:'강인한 생명력(센쥬의 피)',d:'나뭇잎 마을을 세운 일족. 막대한 차크라와 놀라운 생명력을 이어받는다.',tal:12,pot:18},
  nara:{n:'나라',nid:'fire',w:3,nat:[],kg:'그림자 모방술 비전',d:'사슴을 키우며 그림자를 다루는 일족. 머리가 비상하다.',tal:6,pot:0,know:15},
  yamanaka:{n:'야마나카',nid:'fire',w:2,nat:[],kg:'심전심술 비전',d:'꽃집을 운영하는 일이 많은 일족. 마음을 읽고 정신을 옮기는 술법을 대대로 전한다.',tal:5,pot:0},
@@ -293,8 +304,6 @@ const RANKS=['아카데미 학생','하급닌자','중급닌자','상급닌자']
 const ROLES={field:'전투닌자',medic:'의료닌자',intel:'정보부 닌자',inst:'아카데미 교관',sensor:'감지닌자',anbu:'암부(暗部)',root:'뿌리(根)',puppet:'인형술사',hunter:'추적닌자',sealer:'봉인술사',elder:'마을 고문',kage:'카게'};
 
 const ERAS=[
- {id:'e1',n:'제1차 인계대전기',y:-80,d:'마을 제도가 막 자리 잡은 시대. 일족들이 손을 잡고 닌자 마을을 세웠고, 대국 사이의 대규모 충돌이 이어진다.'},
- {id:'e2',n:'제2차 인계대전기',y:-42,d:'오랜 전쟁의 두 번째 막. 대국들이 소국을 전장 삼아 싸운다.'},
  {id:'e3',n:'제3차 인계대전기',y:-14,d:'세 번째 대전의 한복판. 어린 천재들이 일찍 전장에 서던 시절.'},
  {id:'e4',n:'구미 습격의 해',y:0,d:'나루토가 태어난 해. 나뭇잎 마을에 아홉 꼬리가 나타난 해에 태어난다.'},
  {id:'e5',n:'평화로운 유년기',y:4,d:'3차 대전이 끝난 뒤의 불안한 평화. 우치하 사건, 중급닌자 시험, 나뭇잎 붕괴 작전을 어린 눈으로 보게 된다.'},
@@ -355,7 +364,7 @@ function leaderOf(nid,y){
  if(nid==='water'){if(y<-14)return '미즈카게(역대)';if(y<=13)return '4대 미즈카게 야구라(피의 안개 시절)';if(y<=29)return '5대 미즈카게 테루미 메이';return '6대 미즈카게 쵸지로'}
  if(nid==='lightning'){if(y<-6)return '라이카게(역대)';if(y<=23)return '4대 라이카게 에이';return '라이카게 다루이'}
  if(nid==='earth'){if(y<-30)return '츠치카게(역대)';if(y<=25)return '3대 츠치카게 오노키';return '4대 츠치카게 쿠로츠치'}
- return N.ldr||'다이묘(대명)의 통치';
+ return N.ldr||'영주의 통치';
 }
 const I=n=>jo(n,"이가");
 // ================= ENGINE 1: util + birth =================
@@ -374,7 +383,7 @@ function mkName(sex,clan){const s=clan?CLANS[clan].n:pick(SURN);return s+' '+pic
 function mkPerson(sex,clan){return {name:mkName(sex,clan),sex}}
 const PNAME=p=>p.name.split(' ')[1]||p.name; // 이름(성 제외)
 
-function eraYear(id){const e=ERAS.find(x=>x.id===id);if(!e||e.id==='any')return rnd(-80,40);return e.y+rnd(0,1)}
+function eraYear(id){const e=ERAS.find(x=>x.id===id);if(!e||e.id==='any')return rnd(-14,40);return e.y+rnd(0,1)}
 function pickNation(y,hidOnly){return wp(NID,id=>(NATIONS[id].from<=y&&y<=NATIONS[id].to&&(!hidOnly||NATIONS[id].hid&&NATIONS[id].vs>0))?NATIONS[id].w:0)}
 function clanPick(nid,y){
  const N=NATIONS[nid];if(!ch(N.clanP))return null;
@@ -394,7 +403,7 @@ function famType(N,place,clan,lv){
  w.orphan=.035+lv*.02;
  return wp(Object.keys(w),k=>w[k]);
 }
-const FAMNAME={clan:'닌자 명문 일족',ninja:'닌자 가정',merch:'상인 가정',craft:'장인·가게 가정',farm:'농어촌 가정',noble:'대명 가신·귀족 가문',orphan:'고아',samurai:'사무라이 가문'};
+const FAMNAME={clan:'닌자 명문 일족',ninja:'닌자 가정',merch:'상인 가정',craft:'장인·가게 가정',farm:'농어촌 가정',noble:'영주 가신·귀족 가문',orphan:'고아',samurai:'사무라이 가문'};
 const FAMCLS={clan:4,ninja:3,merch:4,craft:3,farm:2,noble:5,orphan:1,samurai:3};
 const CLSN=['','극빈','가난','보통','넉넉','부유'];
 const FAMMONEY={clan:150000,ninja:70000,merch:130000,craft:45000,farm:15000,noble:500000,orphan:0,samurai:90000};
@@ -414,7 +423,7 @@ function rollKG(p,N,clan){
  if(clan&&CLANS[clan].kg){const c=CLANS[clan];let age=null,type='clan';
   if(clan==='uchiha')age=rnd(7,14);
   if(clan==='hyuga')age=4;
-  return {n:c.kg,d:c.d,awake:age,type:clan,clan:true,done:false};}
+  return {n:c.kg,d:c.d,awake:age,type:clan,clan:true,done:false,hiden:!['uchiha','hyuga','yuki','kaguya','onoki'].includes(clan)};}
  // 속성 조합 혈계한계 (드물게)
  for(const cb of COMBOS){
   if(cb.a.every(x=>p.nat.includes(x))){
@@ -434,7 +443,7 @@ function mkParent(rel,type,p,clan){
   if(ch(ninjaP)){q.ninja=true;q.rank=rankPick(type==='clan'?.12:0);q.job=RANKS[q.rank]}
  }
  if(!q.ninja){
-  if(type==='noble')q.job=pick(['대명의 가신','대상인','관리']);
+  if(type==='noble')q.job=pick(['영주의 가신','대상인','관리']);
   else if(type==='samurai')q.job=rel==='아버지'?'사무라이':pick(['도장 사범','가정을 돌봄']);
   else if(type==='farm')q.job=pick(['농부','어부','소작농']);
   else if(type==='merch')q.job=pick(['대상인','행상인','포목점 주인','약초 상인']);
@@ -503,6 +512,7 @@ function newPerson(o){
 // ================= ENGINE 2: helpers, family, world =================
 const NN=p=>NATIONS[p.nid];
 function fixJosa(t){
+ t=t.replace(/특별 상급닌자\(특별 상급닌자\)/g,'특별 상급닌자').replace(/([가-힣])(로서 |로 일가)/g,(m,c,j)=>{const x=c.charCodeAt(0)-0xAC00;return (x>=0&&x<=11171&&x%28!==0&&x%28!==8)?c+'으'+j:m});
  const b=c=>{const x=c.charCodeAt(0)-0xAC00;return x>=0&&x<=11171&&x%28!==0};
  const r=c=>c.charCodeAt(0)-0xAC00>=0&&(c.charCodeAt(0)-0xAC00)%28===8;
  return t.replace(/([가-힣])(이\(가\)|은\(는\)|을\(를\)|와\(과\)|\(으\)로)/g,(m,c,j)=>c+(j==='이(가)'?(b(c)?'이':'가'):j==='은(는)'?(b(c)?'은':'는'):j==='을(를)'?(b(c)?'을':'를'):j==='와(과)'?(b(c)?'과':'와'):((b(c)&&!r(c))?'으로':'로')));
@@ -589,7 +599,7 @@ function familyTick(p,c){
  // 형제
  F.sibs.forEach(s=>{if(!s.alive)return;s.age++;const h=(s.age<5?.01:.0012)+(s.age>60?.00006*Math.exp(.094*s.age):0)+c.lv*.0015;if(ch(h)){s.alive=false;s.dAge=p.age;L(p,p.track==='rogue'?`풍문으로 ${s.rel}(${s.name})의 부고를 들었다.`:`${s.rel}(${s.name})가 세상을 떠났다.`,'b');add(p,'happy',-8);add(p,'bond',-4)}});
  // 배우자
- if(F.spouse&&F.spouse.alive){const s=F.spouse;s.age++;if(ch(.00006*Math.exp(.094*s.age)+.0015+(s.ninja?c.lv*.004:.001))){s.alive=false;L(p,`배우자 ${I(s.name)} 세상을 떠났다.`,'b');add(p,'happy',-22);add(p,'bond',-10);p.flags.widow=true}}
+ if(F.spouse&&F.spouse.alive){const s=F.spouse;s.age++;if(ch(.00006*Math.exp(.094*s.age)+.0015+(s.ninja?c.lv*.004:.001))){s.alive=false;L(p,s.left?`풍문으로 두고 온 배우자 ${I(s.name)} 세상을 떠났다는 소식을 들었다. 장례에도 갈 수 없었다.`:`배우자 ${I(s.name)} 세상을 떠났다.`,'b');add(p,'happy',-22);add(p,'bond',-10);p.flags.widow=true}}
  // 자녀
  F.kids.forEach(k=>{
   if(!k.alive)return;k.age++;kidTick(p,k,c);
@@ -657,7 +667,7 @@ function worldEvents(p,c){
   p.fam.parents.forEach(q=>{if(!q.dead&&!q.unk&&ch(q.ninja?.3:.1)){q.dead=true;q.dcause='구미의 습격';L(p,q.rel+'('+q.name+')가 구미의 습격에서 목숨을 잃었다.','b');add(p,'happy',-15);add(p,'bond',-10)}});
   p.famMoney*=.7;p.flags.kyuubi=true;add(p,'happy',-5);
  }
- if(y===4&&n==='fire'&&p.clan==='hyuga'&&ch(.3)){L(p,'구름 마을이 휴가 일족의 어린아이를 납치하려는 사건이 일어났다. 분가의 한 사람이 일족을 위해 희생되었다는 이야기가 일족 안에서 오래 회자되었다.','w')}
+ if(y===4&&n==='fire'&&p.clan==='hyuga'&&ch(.3)){L(p,'구름 마을이 휴우가 일족의 어린아이를 납치하려는 사건이 일어났다. 분가의 한 사람이 일족을 위해 희생되었다는 이야기가 일족 안에서 오래 회자되었다.','w')}
  if(y===7&&n==='fire'&&p.clan==='uchiha'&&vl){
   L(p,'하룻밤 사이에 우치하 일족이 거의 전멸했다. 쿠데타 계획과 한 소년의 선택이 마을 역사에 지워지지 않는 상처를 남겼다.','w');
   if(!(a>=12&&isNin(p)&&ch(.15))){die(p,'massacre','우치하 일족의 밤에 목숨을 잃었다.');return}
@@ -666,8 +676,8 @@ function worldEvents(p,c){
  if(y===12){
   if(n==='fire'&&vl||n==='fire'&&pl==='town'&&ch(.3)){
    L(p,'나뭇잎 붕괴 작전. 오로치마루와 모래·소리 마을 연합이 중급닌자 시험을 틈타 마을을 습격했다. 3대 호카게 히루젠이 목숨을 걸고 맞섰고, 마을 곳곳이 파괴되었다.','w');
-   if(adultNin&&ch(.1)){die(p,'war','나뭇잎 붕괴 작전 중 목숨을 잃었다.');return}
-   if(!adultNin&&a>=6&&ch(.015)){die(p,'war','습격의 잔해에 휩쓸려 목숨을 잃었다.');return}
+   if(adultNin&&ch(.2)){die(p,'war',pick(['나뭇잎 붕괴 작전 중 마을을 지키다 목숨을 잃었다.','나뭇잎 붕괴 작전 때 거대한 뱀 소환수에 휩쓸려 전사했다.','나뭇잎 붕괴 작전 중 결계 안에서 적 닌자들과 맞서다 쓰러졌다.']));return}
+   if(!adultNin&&a>=6&&ch(.06)){die(p,'war',pick(['나뭇잎 붕괴 작전의 혼란 속에서 무너진 건물에 깔려 목숨을 잃었다.','습격의 잔해에 휩쓸려 목숨을 잃었다.','피난하던 길에서 적 닌자의 공격을 받아 세상을 떠났다.']));return}
    add(p,'happy',-8);
   }else if((n==='wind'||n==='sound')&&adultNin){
    L(p,`${n==='wind'?'모래':'소리'} 마을 연합군의 일원으로 나뭇잎 마을 습격에 가담했다. 작전은 실패했고, 카제카게는 이미 쓰러져 있었다.`,'w');
@@ -683,22 +693,16 @@ function worldEvents(p,c){
  }
  if(y===16&&n==='fire'&&(vl||pl==='town')){
   L(p,'페인의 습격. 하늘에서 쏟아진 충격파가 나뭇잎 마을을 평지로 만들었다. 그러나 이후 "소생의 기적"으로 희생자들이 되살아났다는 이야기가 퍼졌다.','w');
-  if(ch(isNin(p)?.11:.07)){
-   if(ch(.45)){L(p,'페인의 공격에 쓰러졌으나, 얼마 뒤 다시 눈을 떴다. 그것은 기적이라 불렸다.','m');add(p,'happy',4)}
-   else{die(p,'war',pick(isNin(p)&&p.age>=12?['페인의 습격 때 마을을 지키려 맞서다 쓰러졌다.','무너지는 마을 한복판에서 아이들을 대피시키다 목숨을 잃었다.','페인의 신라천정에 휩쓸려 전사했다.']:['페인의 습격 속에서 무너진 건물 아래 목숨을 잃었다.','충격파에 휩쓸려 가족과 함께 피난하던 길에서 세상을 떠났다.','페인의 습격으로 폐허가 된 거리에서 목숨을 잃었다.']));return}
-  }
+  bigBattle(p,'pain');if(p.dead)return;
   p.famMoney*=.7;
  }
  if(y===17){
   const nin=p.track==='ninja'||p.track==='retired'&&p.rank>=1;
   L(p,'제4차 인계대전. 5대국이 처음으로 하나가 된 "닌자 연합군"이 결성되어 아카츠키와 마다라, 오비토에 맞섰다. 수많은 죽은 닌자가 되살려져 전장에 서는 지옥도가 펼쳐졌다.','w');
-  if(nin&&p.age>=14){
-   const pr=.17*(p.rank>=2?1:1.3)*(1.3-skAvg(p)/120)*(p.role==='medic'?.5:1);
-   if(ch(pr)){die(p,'war',pick(['제4차 인계대전에서 연합군의 일원으로 싸우다 전사했다.','제4차 인계대전 최전선에서 되살아난 죽은 닌자들에게 쓰러졌다.','제4차 인계대전에서 십미의 공격에 휩쓸려 목숨을 잃었다.','제4차 인계대전에서 동료를 지키려다 전사했다.','제4차 인계대전에서 백 제츠의 군단과 싸우다 목숨을 잃었다.']));return}
-   L(p,'연합군 소속으로 대전에 참전해 살아남았다. 동료들의 얼굴이 하나둘 떠올랐다.','m');add(p,'happy',-8);ach(p,'제4차 인계대전 참전');p.flags.trauma=(p.flags.trauma||0)+1;
-  }else if(p.age>=14&&ch(.12)){
+  if(nin&&p.age>=14&&p.nid!=='sound'){bigBattle(p,'war4');if(p.dead)return}
+  else if(p.age>=14&&ch(.12)){
    L(p,'징집된 보급 부대의 일원으로 후방을 지켰다. 전장에서 날아든 소식은 대부분 슬픈 이야기였다.','w');
-   if(ch(.05)){die(p,'war','연합군의 보급 부대에서 습격을 받아 목숨을 잃었다.');return}
+   if(ch(.07)){die(p,'war','연합군의 보급 부대에서 습격을 받아 목숨을 잃었다.');return}
   }
   if(ch(.7))L(p,'하늘에 붉은 달이 떠오르고, 많은 이들이 하나의 긴 꿈에 빠졌다. 꿈에서 깨어난 사람들은 그 안에서 이상적인 삶을 보았다고 말했다. 곧 영웅들이 꿈을 깼다.','m');
  }
@@ -940,7 +944,7 @@ const EV_ACAD=[
  {k:'forbid',w:()=>1,f:p=>{L(p,'한밤에 몰래 훈련장에 나가다 순찰 중인 닌자에게 들켜 혼이 났다.','n');add(p,'know',1)}},
  {k:'genscroll',w:p=>p.sk.gen<20?1.5:3,f:p=>{sk(p,'gen',3);L(p,'환술 이론 시간에 눈을 감고 차크라의 흐름을 느끼는 훈련을 했다.','g')}},
  {k:'mission_d',w:p=>p.age>=9?3:0,f:p=>{L(p,'아카데미 학생을 대상으로 하는 마을 청소 실습에 나갔다. 어른들이 고맙다며 간식을 줬다.','g');add(p,'bond',2)}},
- {k:'earlygrad',once:true,w:(p,c)=>c.lv>=2&&p.age>=7&&p.age<=10&&p.tal>78?4:0,f:p=>{p.gradAge=p.age;L(p,'천재성을 인정받아 조기 졸업 시험에 나서게 되었다.','m')}}
+ {k:'earlygrad',once:true,w:(p,c)=>c.lv>=2&&p.age>=7&&p.age<=10&&p.tal>999?4:0,f:p=>{p.gradAge=p.age;L(p,'천재성을 인정받아 조기 졸업 시험에 나서게 되었다.','m')}}
 ];
 const SHARED_NIN=[
  {k:'frd',w:()=>3,f:p=>{L(p,'동료들과 술자리에서 긴 이야기를 나눴다. 이런 밤이 오래 갔으면 했다.','g');add(p,'happy',4);add(p,'bond',4)}},
@@ -984,11 +988,11 @@ function missionYear(p,c){
   L(p,txt,cls==='A'||cls==='S'?'m':'g');
   const gain=cls==='D'?1:cls==='C'?2:cls==='B'?3:cls==='A'?4.5:6;
   const kk=pick(['tai','nin','gen']);sk(p,kk,gain*.8);p.fame=(p.fame||0)+(cls==='D'?.3:cls==='C'?.7:cls==='B'?1.5:cls==='A'?2.5:4);
-  p.money+={D:2000,C:10000,B:30000,A:60000,S:120000}[cls];
  }else{
   L(p,(rd&&role!=='field'||role==='field'&&rk>=2)?roleLine(p,cls,d,false,tm):`${tm}${cls}급 임무「${d}」에 실패했다. ${pick(['의뢰인의 불신이 컸다.','함정에 빠져 퇴각했다.','정보가 잘못되어 있었다.'])}`,'b');roleFx(p,cls,false);
   const sev=ch(.25)?rnd(14,34):rnd(4,13);add(p,'health',-sev);add(p,'happy',-3);if(sev>=14)hosp(p,sev);if(!p.dead&&ch({D:.002,C:.01,B:.03,A:.06,S:.1}[cls]))maim(p,`${cls}급 임무 중`);
  }
+ {const PR={D:500,C:1500,B:4500,A:11000,S:28000};const pr=Math.round(PR[cls]*times*(success?1:.25));p.money+=pr;const lg=p.log[p.log.length-1];if(lg&&!p.dead)lg.t+=` (${cls}급 ${times}건, 보수 ${fmtMoney(pr)})`}
  if(p.team&&p.team.mates.length&&p.rank===1&&ch(.03+lv*.02)){const m=pick(p.team.mates);if(m.alive){m.alive=false;L(p,`팀원 ${I(m.name)} 임무 중 목숨을 잃었다.`,'b');add(p,'happy',-16);add(p,'bond',-10);p.flags.trauma=(p.flags.trauma||0)+1}}
 }
 function promoTick(p,c){
@@ -1018,12 +1022,11 @@ function promoTick(p,c){
   if(a>=21&&yrs>=need+1&&skAvg(p)>=60&&ch(.04+(c.lv>=1.5?.03:0)+((p.fame||0)>12?.04:0))){
    const tokubetsu=ch(.25)&&['intel','sensor','medic','puppet','sealer','hunter'].includes(p.role)||Math.max(p.sk.tai,p.sk.nin,p.sk.gen)>80&&skAvg(p)<60;
    p.rank=3;p.sp=tokubetsu;p.promoAge3=a;p.fame=(p.fame||0)+3;ach(p,tokubetsu?'특별 상급닌자 승격':'상급닌자 승격');
-   L(p,tokubetsu?'특별 상급닌자(특별 상급닌자)로 임명되었다. 특정 분야에서 인정받은 결과다.':'상급닌자가 되었다. 마을 정예의 일원이다.','m');
+   L(p,tokubetsu?'특별 상급닌자로 임명되었다. 특정 분야에서 인정받은 결과다.':'상급닌자가 되었다. 마을 정예의 일원이다.','m');
    if(ch(.45)&&!p.flags.summon)summonAsk(p);
   }
  }
- if(p.rank>=1&&p.rank<2&&p.age>=13&&p.age<=18&&p.tal>=78&&(p.flags.anbuTest||skAvg(p)>=38)&&NID_GREAT.includes(p.nid)&&!p.did.anbuAsk&&(p.flags.anbuTest||ch(.14))){p.did.anbuAsk=true;ask(p,{title:'천재를 향한 암부의 제안',body:'어린 나이에 두각을 드러낸 당신을 암부가 눈여겨봤습니다. 이른 나이에 비밀과 어둠을 아는 자리입니다.',opts:[{l:'받아들인다',s:'빠르게 강해지지만 청춘을 잃는다',a:3,f:p=>{p.role='anbu';p.rank=2;p.promoAge2=p.age;add(p,'bond',-14);add(p,'happy',-10);sk(p,'tai',8);sk(p,'nin',8);sk(p,'gen',5);p.flags.anbu=true;ach(p,'소년 암부');L(p,'어린 나이에 암부로 발탁되었다. 가면 뒤의 첫 임무는 아직 기억하고 싶지 않다.','m')}},{l:'거절한다',s:'동기들과 같은 길을 걷는다',a:5,f:p=>{L(p,'암부의 제안을 거절했다. 아직은 또래들과 같은 길을 걷고 싶었다.','n')}}]})}
- if(p.rank>=2&&p.role!=='anbu'&&p.role!=='root'&&a>=17&&a<=36&&NID_GREAT.includes(p.nid)&&p.tal>52&&(p.flags.anbuTest||skAvg(p)>42)&&!p.did.anbuAsk&&(p.flags.anbuTest||ch(.07))){p.did.anbuAsk=true;anbuAsk(p,c)}
+  if(p.rank>=2&&p.role!=='anbu'&&p.role!=='root'&&a>=15&&a<=42&&NID_GREAT.includes(p.nid)&&p.tal>50&&(p.flags.anbuTest||skAvg(p)>40)&&!p.did.anbuAsk&&(p.flags.anbuTest||ch(.09))){p.did.anbuAsk=true;anbuAsk(p,c)}
  if(p.rank>=1&&!p.flags.defected&&a>=15&&ch((.012+(p.flags.trauma||0)*.004+(p.st.happy<30?.012:0)+(c.lv>=2?.004:0)+(hasT(p,'ambit')?.01:0)-(hasT(p,'loyal')?.008:0)+(hasT(p,'loner')?.006:0)))&&!p.did.defect){p.did.defect=true;defectAsk(p,c)}
  if(p.rank===3&&a>=38&&(p.fame||0)>40&&p.tal>80&&skAvg(p)>78&&!p.flags.kage&&ch(.012)&&NID_GREAT.concat(['rain','waterfall','grass','sound']).includes(p.nid)){
   p.flags.kage=true;p.role='kage';ach(p,'카게 취임(평행 세계)');L(p,`${vil(p)}의 새로운 ${jo(ldr(p),'로')} 추대되었다. 정사에는 기록되지 않은 또 하나의 역사가 열렸다.`,'m');add(p,'happy',8)
@@ -1064,7 +1067,7 @@ const EV_CIV=[
  {k:'festival',w:()=>3,f:p=>{L(p,'마을 축제에서 단골들과 어울려 밤새 웃었다.','g');add(p,'happy',5);add(p,'bond',3)}},
  {k:'gamble',w:p=>p.st.happy<40?3:.8,f:p=>{p.money-=rnd(8000,50000);L(p,'도박장 문을 드나들다 빚이 쌓였다. 아는 사람의 한마디가 겨우 발길을 돌렸다.','b');add(p,'happy',-6)}},
  {k:'drink',w:p=>p.st.happy<38?3:.6,f:p=>{add(p,'health',-5);L(p,'술이 늘었다. 아침마다 머리가 무거웠다.','b')}},
- {k:'tax',w:()=>2,f:p=>{p.money-=rnd(3000,18000);L(p,'대명의 세금이 올랐다. 푸념하는 사람들이 가게를 채웠다.','n')}},
+ {k:'tax',w:()=>2,f:p=>{p.money-=rnd(3000,18000);L(p,'영주의 세금이 올랐다. 푸념하는 사람들이 가게를 채웠다.','n')}},
  {k:'sage',w:()=>1,f:p=>{L(p,'이상한 소문이 돌았다. 어느 닌자가 용지동굴에서 돌아오지 않았다고 했다.','n')}}
 ];
 const EV_ANY=[
@@ -1094,7 +1097,7 @@ function mortality(p,c){
  if(ch(h)){
   let cause='병',txt;
   if(a<5)txt=pick(['어린 나이에 병으로 세상을 떠났다.','열병을 이기지 못하고 세상을 떠났다.']);
-  else if(a>=62){cause='old';txt=pick(['가족들이 지켜보는 가운데 조용히 눈을 감았다.','잠자듯 평온하게 세상을 떠났다.','정원 의자에 앉은 채 눈을 감았다.']);}
+  else if(a>=62){cause='old';txt=p.flags.defected&&!p.flags.amnesty?pick(['낯선 마을의 작은 방에서 홀로 눈을 감았다.','끝내 본명을 밝히지 못한 채 조용히 눈을 감았다.','지난 일을 모두 가슴에 묻은 채 잠자듯 세상을 떠났다.']):pick(['가족들이 지켜보는 가운데 조용히 눈을 감았다.','잠자듯 평온하게 세상을 떠났다.','정원 의자에 앉은 채 눈을 감았다.']);}
   else txt=pick(['병이 깊어 세상을 떠났다.','오랜 투병 끝에 눈을 감았다.','갑작스러운 병으로 세상을 떠났다.']);
   die(p,cause,txt);
  }
@@ -1112,7 +1115,7 @@ function startLife(p){
  if(ptxt)L(p,`${ptxt}. 첫 보호자는 ${p.fam.guardian}.`,'b');
  else{const f=p.fam.parents[0],m=p.fam.parents[1];L(p,`아버지는 ${f.name}(${f.job||'평범한 주민'}), 어머니는 ${m.name}(${m.job||'평범한 주민'}). ${FAMNAME[p.ftype]}.${p.clan?` ${CLANS[p.clan].n} 일족의 피를 이었다.`:''}`,'n')}
  if(p.fam.sibs.length)L(p,`형제자매 ${p.fam.sibs.length}명이 있다.`,'n');
- if(p.clan==='hyuga')L(p,p.hyugaMain?'휴가 일족의 본가(종가)에서 태어났다.':'휴가 일족의 분가에서 태어났다.','n');
+ if(p.clan==='hyuga')L(p,p.hyugaMain?'휴우가 일족의 본가(종가)에서 태어났다.':'휴우가 일족의 분가에서 태어났다.','n');
  if(p.jin)L(p,`특별한 징조가 있었다. 마을 어른들은 ${p.jin}(꼬리 달린 짐승)의 그릇이 될 아이라고 수군거렸다.`,'w');
  const lv=warLv(p.nid,p.born);
  if(lv>=2)L(p,`${I(eraName(p.born))} 한창이었다. 아이가 태어난 집에도 전쟁의 그림자가 드리워 있었다.`,'w');
@@ -1189,15 +1192,15 @@ function stepYear(p){
  }
  if(p.dead){p.map.push('dead');return}
  warTick(p,c);if(p.dead){p.map.push('dead');return}
- if(p.age>=6){const ap=p.track==='rogue'?EV_ANY.filter(e=>!['friend','lossfriend','parentvisit','kidgrow'].includes(e.k)):EV_ANY.concat(EV_EXTRA_ANY);runPool(p,c,ap,ch(.55)?1:0)}
+ if(p.age>=6){const ap=(p.track==='rogue'||p.flags.hidden)?EV_ANY.filter(e=>!['friend','lossfriend','parentvisit','kidgrow','kidplan'].includes(e.k)):EV_ANY.concat(EV_EXTRA_ANY);runPool(p,c,ap,ch(.55)?1:0)}
  if(p.dead){p.map.push('dead');return}
  if(p.rest>0&&p.flags.deprOn){p.rest--;runPool(p,c,EV_DEPR,1)}
  if(p.flags.deprOn&&p.rest<=0&&p.depr>=14&&ch(.5))runPool(p,c,EV_DEPR,1);
- if(p.fam.kids.some(k=>k.alive)&&ch(.5))runPool(p,c,EV_KIDS,1);
- if(p.fam.spouse)marriageTick(p,c);
+ if(kidsMine(p).length&&ch(.5))runPool(p,c,EV_KIDS,1);
+ if(p.fam.spouse&&!p.fam.spouse.left)marriageTick(p,c);
  if(p.love)loveTick(p,c);
  if(p.dead){p.map.push('dead');return}
- if(p.fam.spouse&&p.fam.spouse.alive&&ch(.45))runPool(p,c,EV_SPOUSE,1);
+ if(p.fam.spouse&&p.fam.spouse.alive&&!p.fam.spouse.left&&ch(.45))runPool(p,c,EV_SPOUSE,1);
  if(p.age>=16&&ch(.18))runPool(p,c,EV_CROSS,1);
  if(p.age>=16&&ch(.22))runPool(p,c,p.track==='rogue'?EV_MONEY.filter(e=>['drinkcost','medbill','travelx'].includes(e.k)):EV_MONEY,1);
  if(p.flags.summon&&EV_SUM[p.flags.summon]&&ch(.28))runPool(p,c,EV_SUM[p.flags.summon],1);
@@ -1422,7 +1425,7 @@ const EV_EXTRA_ACAD=[
  {k:'y2',w:()=>2,f:p=>{L(p,'생존 훈련으로 숲에서 사흘을 보냈다. 처음으로 어둠이 무섭지 않았다.','g');sk(p,'tai',2);add(p,'health',-3)}},
  {k:'y3',w:()=>2,f:p=>{L(p,'교관이 "닌자는 겉으로 드러나지 않는 존재"라며 닌자의 규율 서른여 개 조항을 암송하게 했다.','n');add(p,'know',3)}},
  {k:'y4',w:()=>1.5,f:p=>{L(p,'같은 반 친구가 시험에 떨어져 학교를 떠났다. 인사도 하지 못했다.','b');add(p,'happy',-4)}},
- {k:'y5',w:()=>2,f:p=>{L(p,'닌자도구 사용법 수업. 쿠나이와 폭죽 부적, 연막탄을 처음 만져 봤다.','g');sk(p,'nin',2)}}
+ {k:'y5',w:()=>2,f:p=>{L(p,'닌자도구 사용법 수업. 쿠나이와 기폭찰, 연막탄을 처음 만져 봤다.','g');sk(p,'nin',2)}}
 ];
 const EV_EXTRA_CIV=[
  {k:'z1',once:true,w:()=>2,f:p=>{L(p,'단골 닌자 가족이 가게에 들러 선물을 두고 갔다.','g');add(p,'happy',4)}},
@@ -1577,7 +1580,7 @@ function loveTick(p,c){
     {l:'내 주장을 굽히지 않는다',s:'관계가 식을 수 있다',a:2,f:p=>{l.score=cl(l.score-10);tr(p,'cold',.3);L(p,'끝까지 지지 않았다. 침묵이 오래 이어졌다.','b')}},
     {l:'시간을 둔다',s:'',a:3,f:p=>{l.score=cl(l.score-2);L(p,'한동안 연락하지 않았다. 먼저 손을 내민 쪽은 상대였다.','n')}}]})}},
   {w:p.track==='ninja'?3:.7,f:()=>{l.score=cl(l.score-6);L(p,`임무로 몇 달 동안 ${l.name}${(l.name.charCodeAt(l.name.length-1)-0xAC00)%28?'을':'를'} 만나지 못했다. 편지 한 통이 위로가 되었다.`,'n')}},
-  {w:p.ftype==='clan'||p.ftype==='noble'?3:.5,f:()=>{ask(p,{title:'가족의 반대',body:`집안에서 ${l.name}${(l.name.charCodeAt(l.name.length-1)-0xAC00)%28?'을':'를'} 못마땅해한다. "${l.ninja?'닌자는 위험하다':'격이 맞지 않는다'}"는 이유다.`,opts:[
+  {w:p.flags.defected?0:p.ftype==='clan'||p.ftype==='noble'?3:.5,f:()=>{ask(p,{title:'가족의 반대',body:`집안에서 ${l.name}${(l.name.charCodeAt(l.name.length-1)-0xAC00)%28?'을':'를'} 못마땅해한다. "${l.ninja?'닌자는 위험하다':'격이 맞지 않는다'}"는 이유다.`,opts:[
     {l:'가족을 설득한다',s:'',a:4,f:p=>{if(ch(.6)){l.score=cl(l.score+5);add(p,'bond',3);L(p,'오래 설득한 끝에 가족이 마지못해 인정했다.','g')}else{add(p,'bond',-5);L(p,'설득은 먹히지 않았다. 집안이 냉랭해졌다.','b')}}},
     {l:'숨기고 계속 만난다',s:'들키면 크게 번진다',a:2,f:p=>{l.score=cl(l.score+2);if(ch(.3)){add(p,'bond',-8);L(p,'몰래 만나던 것이 들통나 집안이 발칵 뒤집혔다.','b')}else L(p,'눈을 피해 몰래 만남을 이어갔다.','n')}},
     {l:'관계를 정리한다',s:'',a:2,f:p=>{breakUp(p,'가족을 거스를 수 없었다.')}}]})}},
@@ -1664,11 +1667,6 @@ const EV_MONEY=[
   ask(p,{title:'내 집을 장만할까',body:'세 들어 사는 집 대신 작은 집 한 채를 살 수 있다. 큰 지출이다.',opts:[
    {l:'집을 산다 (60,000료)',s:'생활비가 줄고 마음이 놓인다',a:4,f:p=>{spend(p,60000);p.flags.house=true;add(p,'happy',6);add(p,'bond',2);ach(p,'내 집 마련');L(p,'작은 마당이 딸린 집을 샀다. 열쇠를 쥐고 한참 문 앞에 서 있었다.','m')}},
    {l:'계속 세를 산다',s:'돈은 손에 남는다',a:3,f:p=>{tr(p,'thrifty',.5);L(p,'집을 사는 대신 계속 세를 들기로 했다.','n')}}]})}},
- {k:'parentmed',w:p=>p.age>=22&&p.fam.parents.some(q=>!q.dead&&!q.unk&&q.age>=58)?1.1:0,f:p=>{
-  ask(p,{title:'부모님의 병원비',body:'연로한 부모님이 몸이 편치 않다. 의원은 좋은 약을 쓰려면 목돈이 필요하다고 한다.',opts:[
-   {l:'비용을 전부 댄다 (25,000료)',s:'효도를 다하지만 지갑이 얇아진다',a:4,f:p=>{spend(p,25000);add(p,'bond',6);add(p,'happy',3);tr(p,'generous',.7);tr(p,'loyal',.5);L(p,'부모님의 약값을 모두 댔다. 어머니가 손을 잡고 "고맙다"고 했다.','g')}},
-   {l:'일부만 보탠다 (8,000료)',s:'',a:3,f:p=>{spend(p,8000);add(p,'bond',1);L(p,'형편이 빠듯해 약값 일부만 보탰다.','n')}},
-   {l:'형제에게 맡긴다',s:'관계가 틀어질 수 있다',a:1,f:p=>{add(p,'bond',-5);tr(p,'greedy',.5);L(p,'약값은 형제들이 알아서 하라고 미뤘다. 한동안 집안이 서먹했다.','b')}}]})}},
  {k:'edu',w:p=>p.fam.kids.some(k=>k.alive&&k.age>=6&&k.age<=15)&&canPay(p,15000)?3:0,f:p=>{
   ask(p,{title:'아이의 교육',body:'아이의 앞날을 위해 돈을 쓸 수 있다.',opts:[
    {l:'좋은 스승을 붙여 준다 (20,000료)',s:'아이의 재능이 자란다',a:4,f:p=>{spend(p,20000);add(p,'bond',3);p.flags.eduPaid=true;tr(p,'generous',.5);const k=pick(p.fam.kids.filter(k=>k.alive));if(k)k.sd=Math.min(1,k.sd+.25);L(p,'아이에게 좋은 스승을 붙여 주었다. 눈빛이 한층 단단해졌다.','g')}},
@@ -1893,7 +1891,7 @@ const EV_STYLE={
  ambush:[{k:'a1',w:()=>3,f:p=>{L(p,'어둠 속에서 환술로 적 순찰대를 소리 없이 무력화시켰다.','g');sk(p,'gen',2)}},{k:'a2',w:()=>2,f:p=>{L(p,'매복 중 몇 시간을 숨죽이고 있다가 목표가 지나가자 단번에 끝냈다. 손이 떨리지 않는 것이 이상했다.','b');tr(p,'cold',.3)}}]
 };
 EV_ROLE.field.push(
- {k:'fd1',w:()=>3,f:p=>{
+ {k:'fd1',w:p=>p.rank>=2?3:0,f:p=>{
   ask(p,{title:'쓰러진 동료와 임무 사이',body:'임무 수행 중 동료가 크게 다쳤다. 지금 구하러 가면 임무가 어그러진다. 임무를 이어 가면 동료가 위험하다.',opts:[
    {l:'동료를 구한다',s:'임무를 놓칠 수 있다',a:4,f:p=>{tr(p,'kind',.8);tr(p,'loyal');add(p,'bond',6);if(ch(.5)){p.fame=(p.fame||0)-.8;L(p,'동료를 업고 후퇴했다. 임무는 어그러졌지만 동료는 살았다. 질책보다 감사가 컸다.','m')}else{L(p,'동료를 구하고도 임무는 가까스로 성공했다.','m');p.fame=(p.fame||0)+1}}},
    {l:'임무를 완수한다',s:'동료를 잃을 수 있다',a:2,f:p=>{tr(p,'cold',.8);p.fame=(p.fame||0)+1.5;if(ch(.45)){L(p,'임무를 우선했다. 임무는 성공했지만 동료는 끝내 돌아오지 못했다.','b');add(p,'happy',-12);p.flags.trauma=(p.flags.trauma||0)+1;tr(p,'guilt')}else{L(p,'임무를 우선했다. 다행히 동료는 다른 이의 도움으로 살아 돌아왔다. 그의 시선이 차가웠다.','n');add(p,'bond',-4)}}}
@@ -1906,7 +1904,7 @@ EV_ROLE.field.push(
   ]})}},
  {k:'fd3',once:true,w:p=>p.sk.nin>40?3:0,f:p=>{
   ask(p,{title:'속성을 벼리다',body:'타고난 속성 가운데 하나를 집중적으로 단련할 시간이 생겼다.',opts:p.nat.slice(0,3).map(n=>({l:`${NATURE[n].n}(${NATURE[n].j}) 속성`,s:NATURE[n].d,a:n===p.nat[0]?4:2,f:p=>{p.flags.mainNat=n;sk(p,'nin',8);ach(p,`${NATURE[n].n} 속성 개화`);L(p,`${NATURE[n].n} 속성 인술을 집중적으로 단련했다. 이제 이 속성만큼은 누구에게도 지지 않는다.`,'m')}}))})}},
- {k:'fd4',w:()=>2,f:p=>{
+ {k:'fd4',w:p=>p.rank>=2?2:0,f:p=>{
   ask(p,{title:'소대 지휘',body:'소규모 소대를 지휘하게 되었다. 어떤 방식으로 이끌까?',opts:[
    {l:'엄격한 규율로 이끈다',s:'결과는 확실하지만 팀이 경직된다',a:3,f:p=>{tr(p,'cold',.4);p.fame=(p.fame||0)+1;add(p,'bond',-2);L(p,'엄격한 규율로 소대를 이끌었다. 임무 성과는 좋았지만 대원들이 말수가 줄었다.','n')}},
    {l:'신뢰로 이끈다',s:'팀워크가 끈끈해진다',a:4,f:p=>{tr(p,'kind',.4);tr(p,'loyal',.4);add(p,'bond',5);L(p,'대원 하나하나의 이야기를 들으며 이끌었다. 위기 때 모두가 나를 믿고 따랐다.','m')}}
@@ -2141,8 +2139,8 @@ LATER.trustCheck=p=>{if(sp(p)){if(ch(.55)){p.marScore=cl((p.marScore||50)+10);L(
  // 연애 중 다툼도 빈도 감소
 })();
 // ---- 자녀 ----
-const kidsMine=p=>p.fam.kids.filter(k=>k.alive&&k.guard!=='ex');
-function kidCost(p){return kidsMine(p).reduce((a,k)=>a+(k.age<6?7500:k.age<13?10500:k.age<=21?(k.acad?15000:12000):0),0)+p.fam.kids.filter(k=>k.alive&&k.guard==='ex').length*5500}
+const kidsMine=p=>p.fam.kids.filter(k=>k.alive&&k.guard!=='ex'&&!k.left);
+function kidCost(p){return kidsMine(p).reduce((a,k)=>a+(k.age<6?7500:k.age<13?10500:k.age<=21?(k.acad?15000:12000):0),0)+p.fam.kids.filter(k=>k.alive&&k.guard==='ex'&&!k.left).length*5500}
 function kidAsk(p){
  if(p.sched.some(s=>s.key==='birth')||(p.flags.kidAskAt!=null&&p.age-p.flags.kidAskAt<2))return;
  const sc=sp(p);
@@ -2432,6 +2430,570 @@ stepYear=function(p){
  if(p.q.length<2&&ch(.014))runPool(p,{y:YR(p)},EV_SPECIAL,1);
  if(!p.dead&&ch(.03))runPool(p,{y:YR(p)},EV_CAMEO,1);
 };
+// ================= ENGINE 14: jobs, donations, migration, murders, festivals =================
+// ---- 직업 추가 (떠돌이·공연 예술인 등) ----
+Object.assign(JOBS,{'떠돌이 행상인':1.2,'약장수':1.3,'인형극단 단원':1.2,'가부키 배우':1.5,'샤미센 악사':1.3,'곡예사':1.2,'이야기꾼(만담가)':1.1,'무희':1.3,'유랑 서커스 단원':1.1,'탈 장인':1.8,'닌자 활극 극단 배우':1.4});
+['떠돌이 행상인','약장수','인형극단 단원','가부키 배우','샤미센 악사','곡예사','이야기꾼(만담가)','무희','유랑 서커스 단원','닌자 활극 극단 배우'].forEach(j=>GEN.push(j));
+if(typeof NATIONS!=='undefined'){['wind','tea','hotspring'].forEach(k=>{if(NATIONS[k]&&NATIONS[k].jobs){NATIONS[k].jobs.push('인형극단 단원')}});if(NATIONS.fire&&NATIONS.fire.jobs){NATIONS.fire.jobs.push('가부키 배우','닌자 활극 극단 배우')}}
+const PERF=['떠돌이 행상인','약장수','인형극단 단원','가부키 배우','샤미센 악사','곡예사','이야기꾼(만담가)','무희','유랑 서커스 단원','닌자 활극 극단 배우','극단 배우'];
+EV_CIV.push(
+ {k:'perf1',w:p=>PERF.includes(p.job)?4:0,f:p=>{L(p,pick(['여러 나라를 돌며 공연을 올렸다. 닌자 마을에서는 박수가 더 크고, 국경 마을에서는 술값이 더 후했다.','닌자 활극을 올린 날, 객석 맨 앞의 닌자 아이들이 눈을 반짝였다. 진짜 닌자가 보는 줄 알고 식은땀이 났다.','국경을 넘는 길에 검문을 받았다. 광대의 짐 속 소품 쿠나이를 보고 닌자들이 한참 웃었다.','마을 광장에서 즉흥 공연을 했다. 아이들이 줄줄이 따라왔다.']),'g');p.money+=rnd(3000,18000);add(p,'happy',3)}},
+ {k:'perf2',w:p=>PERF.includes(p.job)&&NN(p).hid?1.5:0,f:p=>{L(p,pick(['공연 도중 객석에서 누가 쿠나이를 던지는 시늉을 해서 소동이 났다. 알고 보니 비번 닌자의 장난이었다.','극단 숙소에서 정체 모를 닌자들이 밤새 우리 짐을 뒤져 갔다. 아침엔 아무것도 없어지지 않았다.']),'n')}},
+ {k:'peddle',w:p=>(p.job==='떠돌이 행상인'||p.job==='약장수')?3:0,f:p=>{L(p,pick(['외딴 산마을에 소금과 바늘을 팔았다. 노인이 오래 기다린 얼굴로 맞아 주었다.','국경 검문소에서 닌자들이 짐을 샅샅이 뒤졌다. 약초 몇 포가 압수되었다.','약장수 입담에 속아 약을 산 손님이 항의했다. 곧 사과하고 값을 돌려줬다.']),'n')}}
+);
+// ---- 기부/돈 쓰는 곳 ----
+{
+ const e=EV_MONEY.find(x=>x.k==='donate');
+ e.w=p=>p.money>=100000&&p.track!=='rogue'?2:0;
+ e.f=p=>{
+  ask(p,{title:'넉넉해진 형편',body:'생활에 여유가 생겼다. 이 돈을 어디에 쓸까?',opts:[
+   {l:'고아원에 기부한다 (30,000료)',s:'전쟁고아와 버려진 아이들에게 간다',a:3,f:p=>{spend(p,30000);add(p,'happy',5);add(p,'bond',3);tr(p,'generous');tr(p,'kind',.5);p.flags.donOrph=(p.flags.donOrph||0)+1;L(p,'고아원에 큰 돈을 기부했다. 아이들이 줄지어 서서 고개를 숙였다.','m');later(p,rnd(3,8),'orphThanks',{n:p.flags.donOrph})}},
+   {l:'의료시설에 기부한다 (30,000료)',s:'병원과 의료 닌자 교육에 쓰인다',a:3,f:p=>{spend(p,30000);add(p,'happy',4);tr(p,'generous',.6);p.flags.donMed=(p.flags.donMed||0)+1;L(p,'마을 의료시설에 큰 돈을 기부했다. 병원장이 직접 나와 감사 인사를 했다.','m');later(p,rnd(2,5),'medUp',{n:p.flags.donMed})}},
+   {l:'사치를 누린다 (30,000료)',s:'좋은 옷, 좋은 술, 좋은 방',a:3,f:p=>{spend(p,30000);add(p,'happy',5);tr(p,'greedy',.5);L(p,'비싼 옷과 술에 돈을 썼다. 순간은 즐거웠다.','g')}},
+   {l:'모아 둔다',s:'',a:4,f:p=>{tr(p,'thrifty');L(p,'쓰지 않고 모으기로 했다.','n')}}]})};
+}
+LATER.orphThanks=(p,d)=>{
+ if(p.dead)return;
+ const v=pick([0,1,2]);
+ if(v===0){L(p,'고아원에서 자란 아이가 아카데미에 합격했다며 찾아왔다. "아저씨 덕분에 겨울을 따뜻하게 보냈어요." 그 말이 오래 마음에 남았다.','g');add(p,'happy',9);add(p,'bond',5)}
+ else if(v===1){L(p,'고아원이 낡은 지붕을 고치고 새 침상과 학용품을 들였다고 했다. 아이들이 손수 쓴 감사 편지가 도착했다. 삐뚤빼뚤한 글씨가 뿌듯했다.','g');add(p,'happy',8);add(p,'bond',3)}
+ else{L(p,'고아원 출신 청년이 의원 조수로 자리 잡았다며 인사를 왔다. 내가 낸 돈이 한 사람의 인생을 바꿨다는 생각에 가슴이 벅찼다.','g');add(p,'happy',10);add(p,'bond',5)}
+ tr(p,'kind',.3);ach(p,'고아원의 은인');
+ if(d.n>=1&&ch(.3))later(p,rnd(4,9),'orphThanks2');
+};
+LATER.orphThanks2=p=>{if(p.dead)return;L(p,'오래전 기부했던 고아원 아이들이 자라 마을 곳곳에서 일하고 있다. 길에서 마주친 청년이 먼저 알아보고 깊이 고개를 숙였다.','g');add(p,'happy',6)};
+LATER.medUp=(p,d)=>{
+ if(p.dead)return;
+ L(p,pick(['기부금으로 의료시설에 새 병동과 약초 창고가 생겼다. 대기하던 환자들이 줄었고, 의료닌자 견습생도 늘었다.','기부한 돈으로 병원이 새 수술실을 들였다. 개원식에서 내 이름이 불렸다.']),'g');
+ add(p,'happy',6);add(p,'health',3);p.flags.medWing=true;ach(p,'병원의 후원자');
+ if(ch(.5))later(p,rnd(3,7),'medUp2');
+};
+LATER.medUp2=p=>{if(p.dead)return;L(p,'후원했던 병원 덕에 어려운 환자를 많이 살렸다는 소문을 들었다. 예전엔 손쓰지 못했던 병도 이제는 고칠 수 있게 되었다고 했다.','g');add(p,'happy',5);add(p,'health',2)};
+// ---- 이주: 비용과 위험, 탈주 취급 ----
+{
+ const e=EV_CROSS.find(x=>x.k==='move');
+ e.f=p=>{
+  p.flags.moveAt=p.age;
+  const y=p.born+p.age;const oldN=p.nid;
+  const cands=NID.filter(x=>x!==p.nid&&NATIONS[x].from<=y&&y<=NATIONS[x].to).sort(()=>R()-.5).slice(0,2);
+  const ninFam=NN(p).hid&&(p.ftype==='ninja'||p.ftype==='clan'||p.fam.parents.some(q=>q.ninja&&!q.dead)||(p.fam.spouse&&p.fam.spouse.ninja));
+  ask(p,{title:'국경을 넘어 이주할까',body:`지금 사는 곳에서의 삶이 갑갑하다. 다른 나라에서 새 삶을 시작할 기회가 생겼다. 하지만 이주는 단순한 이사가 아니다. 이주 비용이 만만치 않고, 길에는 산적과 도적이 있다.${ninFam?' 게다가 가족 중에 닌자가 있어, 마을 허락 없이 나라를 떠나면 "무단 이탈"로 기록될 수 있다.':''}`,opts:cands.map(x=>{const cost=rnd(40000,130000);return{l:`${jo(NATIONS[x].name,'로')} 이주한다 (비용 약 ${fmtMoney(cost)})`,s:p.money<cost?'모아 둔 돈이 모자란다. 빚을 내야 한다':NATIONS[x].desc.slice(0,34)+'…',a:1,f:p=>{
+   spend(p,cost);if(p.money<-30000)p.money=-30000;
+   if(ch(.3)){p.money-=rnd(8000,40000);add(p,'health',-rnd(6,20));add(p,'happy',-6);L(p,'이주 길에 산적을 만나 짐을 빼앗겼다. 가까스로 몸만 빠져나왔다.','b');if(ch(.04)){die(p,'murder','이주 길에 산적을 만나 목숨을 잃었다.');return}}
+   else L(p,'긴 여정을 거쳐 국경을 넘었다. 짐은 가벼워졌지만 마음은 한결 단단해졌다.','n');
+   p.nid=x;p.place=NATIONS[x].hid?pick(['village','town']):'town';
+   p.where=pick((p.place==='village'?NATIONS[x].vp:NATIONS[x].tp).length?(p.place==='village'?NATIONS[x].vp:NATIONS[x].tp):NATIONS[x].rp);
+   p.jobLv=Math.max(0,p.jobLv-1);add(p,'bond',-10);
+   L(p,`${NATIONS[x].name} ${p.where}(으)로 이주했다. 낯선 말투와 풍습 속에서 다시 시작했다.`.replace('(으)로','로'),'m');ach(p,'이주');
+   if(ninFam)later(p,rnd(1,3),'migHunter',{old:oldN});
+  }}}).concat([{l:'지금 이곳에 남는다',s:'',a:6,f:p=>{L(p,'이사 이야기는 접어 두었다.','n')}}])});
+ };
+}
+LATER.migHunter=(p,d)=>{
+ if(p.dead||p.track==='rogue')return;
+ const V=NATIONS[d.old].vil||NATIONS[d.old].name;
+ L(p,`${V}에서 가족을 통해 이주 사실이 알려졌다. 마을은 이를 허락 없는 이탈로 기록했다.`,'w');
+ ask(p,{title:'뒤쫓는 그림자',body:`${V}에서 보낸 추적닌자가 모습을 드러냈다. "허락 없이 마을 관계자가 국경을 넘었다. 사정을 들어야겠다."`,opts:[
+  {l:'사정을 설명한다',s:'오해를 풀 수 있을지도 모른다',a:4,f:p=>{if(ch(.55)){L(p,'추적닌자는 오래 듣더니 "보고는 올리겠다"고 하고 돌아갔다. 한동안 긴장 속에 지냈다.','n');add(p,'happy',-3)}else{p.money-=rnd(10000,40000);add(p,'health',-rnd(8,18));add(p,'happy',-8);L(p,'설명은 통하지 않았다. 구금과 심문이 이어졌고, 풀려났을 땐 재산과 몸이 상해 있었다.','b')}}},
+  {l:'도망친다',s:'따라잡히면 더 위험하다',a:3,f:p=>{if(ch(.55)){add(p,'happy',-5);L(p,'밤을 틈타 짐도 챙기지 못하고 도망쳤다. 몇 달을 숨어 지냈다.','n');p.money-=rnd(5000,20000)}else if(ch(.4)){die(p,'hunted','도주 중 추적닌자에게 붙잡혀 목숨을 잃었다.')}else{add(p,'health',-rnd(15,30));L(p,'도망치다 붙잡혀 크게 다쳤다.','b')}}},
+  {l:'맞서 싸운다',s:'민간인이 닌자를 이기기는 어렵다',a:1,f:p=>{if(ch(.12)){L(p,'기적처럼 추적닌자를 따돌렸다. 하지만 이 일은 오래 소문으로 남았다.','m');add(p,'happy',-4)}else if(ch(.6)){die(p,'hunted','추적닌자에게 맞서다 목숨을 잃었다.')}else{add(p,'health',-rnd(20,35));L(p,'맞서 싸우다 크게 다쳤다.','b')}}}
+ ]});
+};
+// ---- 살해: 적 닌자 습격, 시기, 도적, 암부 목격 ----
+const EV_MURDER=[
+ {k:'mu_enemy',cd:8,w:(p,c)=>NN(p).hid&&(p.place==='village'||p.place==='town')&&c.lv>=1?3:(NN(p).hid&&(p.place==='village'||p.place==='town')?.5:0),f:p=>{
+   L(p,'적국 닌자가 마을에 잠입해 습격 소동이 벌어졌다. 비명과 폭발음이 밤을 가로질렀다.','w');
+   const pr=isNin(p)&&p.rank>=1?.07:.045;
+   if(ch(pr)){die(p,'murder',isNin(p)&&p.rank>=1?'마을에 잠입한 적 닌자와 싸우다 쓰러졌다.':'적 닌자의 습격에 휘말려 목숨을 잃었다.');return}
+   add(p,'happy',-5);add(p,'health',-rnd(3,12));p.flags.trauma=(p.flags.trauma||0)+(ch(.3)?1:0)}},
+ {k:'mu_envy',cd:15,w:p=>(p.track==='ninja'&&p.rank>=1&&((p.fame||0)>=3||p.rank>=2)&&p.age>=16)?1.6:0,f:p=>{
+   const n=mkPerson(ch(.5)?'M':'F').name;
+   ask(p,{title:'등 뒤의 시선',body:`같은 마을의 닌자 ${n}이(가) 요즘 나를 보는 눈이 이상하다. 인정받는 나를 시기한다는 소문이 돌고, 훈련장에서 내 도구가 자꾸 사라진다.`,opts:[
+    {l:'경계하며 지켜본다',s:'눈에 띄지 않게 대비한다',a:4,f:p=>{if(ch(.12)){die(p,'murder',`마을 안에서 시기심에 눈이 먼 동료 ${n}에게 암습을 당했다.`);return}L(p,'기척을 살피며 지냈다. 어느 날 밤 나를 노린 그림자를 알아채고 먼저 제압했다. 상대는 눈물을 흘리며 용서를 빌었다.','m');add(p,'happy',-3);tr(p,'cautious',.4)}},
+    {l:'모른 척 지나간다',s:'신경 쓰지 않는다',a:3,f:p=>{if(ch(.28)){die(p,'murder',`마을 안에서 시기심에 눈이 먼 동료 ${n}에게 암습을 당했다.`);return}L(p,'모른 척 지냈다. 시간이 지나자 시선은 거두어졌다.','n')}},
+    {l:'상부에 보고한다',s:'조사가 시작된다',a:3,f:p=>{L(p,`상부가 ${n}을(를) 불러 조사했다. 관계는 완전히 끊어졌지만 위협은 사라졌다.`,'m');add(p,'bond',-4);add(p,'happy',-2)}}
+   ]})}},
+ {k:'mu_gang',cd:12,w:p=>(p.track==='civ'||p.track==='child'||p.track==='retired')&&p.age>=14&&(p.place==='rural'||p.place==='town')?2:0,f:p=>{
+   ask(p,{title:'도적단의 습격',body:'무장한 도적단이 가게와 집을 덮쳤다. 칼을 든 자들이 재물을 내놓으라고 외친다.',opts:[
+    {l:'재물을 내준다',s:'목숨은 지킨다',a:5,f:p=>{p.money-=rnd(10000,50000);add(p,'happy',-6);L(p,'도적들에게 재물을 모두 내주었다. 목숨은 건졌지만 한동안 문을 열 때마다 가슴이 뛰었다.','b');if(ch(.02)){die(p,'murder','도적들에게 재물을 빼앗기고 칼에 찔려 숨졌다.')}}},
+    {l:'맞서 싸운다',s:'용기가 필요하다. 위험하다',a:2,f:p=>{if(ch(isNin(p)?.8:.3)){L(p,'이웃들과 힘을 모아 도적을 몰아냈다. 마을에서 용감한 사람으로 이름이 났다.','m');add(p,'happy',4);tr(p,'brave',.5);add(p,'health',-rnd(3,10))}else if(ch(.5)){die(p,'murder','도적단에 맞서다 목숨을 잃었다.')}else{add(p,'health',-rnd(15,30));p.money-=rnd(10000,40000);L(p,'맞서다 크게 다쳤다. 도적들은 모든 것을 빼앗아 갔다.','b')}}},
+    {l:'숨는다',s:'가족과 함께 광에 숨는다',a:3,f:p=>{if(ch(.7)){L(p,'광 속에서 숨을 죽였다. 도적들은 물건만 가져가고 떠났다.','n');p.money-=rnd(5000,25000)}else{p.money-=rnd(10000,40000);if(ch(.12)){die(p,'murder','숨어 있던 곳이 발각되어 도적들에게 목숨을 잃었다.');return}add(p,'health',-rnd(8,18));L(p,'숨은 곳이 들켜 맞고 물건도 빼앗겼다.','b')}}}
+   ]})}},
+ {k:'mu_anbu',once:true,w:p=>(p.track==='civ'||p.track==='child')&&p.age>=15&&NN(p).hid&&p.place!=='rural'?1.0:0,f:p=>{
+   ask(p,{title:'밤길에서 본 것',body:'늦은 밤길에서 얼굴을 가린 이들이 누군가를 처리하는 광경을 보았다. 암부의 비밀 임무인 듯하다. 눈이 마주쳤을지도 모른다.',opts:[
+    {l:'못 본 척 돌아선다',s:'조용히 사라진다',a:5,f:p=>{if(ch(.18)){die(p,'murder','밤길에서 본 것 때문에 입막음을 당했다.');return}add(p,'happy',-4);L(p,'못 본 척 돌아섰다. 며칠 동안 밤마다 그 광경이 떠올랐다.','n')}},
+    {l:'신고한다',s:'어디에 신고해야 하는지도 모른다',a:1,f:p=>{if(ch(.5)){die(p,'murder','밤길에서 본 것을 신고하려다 입막음을 당했다.');return}add(p,'happy',-6);L(p,'신고하러 갔지만 담당자는 "아무것도 보지 못했다"고 말해 달라고 했다.','b')}},
+    {l:'도망친다',s:'뛰어서 멀리 떨어진다',a:3,f:p=>{if(ch(.3)){die(p,'murder','도망치다 암부에게 따라잡혀 목숨을 잃었다.');return}add(p,'happy',-5);L(p,'정신없이 달아났다. 다행히 아무도 쫓아오지 않았다.','n')}}
+   ]})}}
+];
+// ---- 축제 ----
+const FEST=(k,test,text,fx,kind,wt)=>({k:'fs_'+k,cd:5,w:(p,c)=>(!p.dead&&p.age>=4&&test(p,p.born+p.age,c))?(wt||1):0,f:p=>{L(p,text,kind||'g');if(fx)fx(p)}});
+const EV_FEST=[
+ FEST('fire1',(p,y)=>p.nid==='fire','여름 밤 축제가 열렸다. 노점마다 등롱이 걸리고, 밤하늘에는 불꽃이 올랐다. 유카타 차림의 사람들이 거리를 가득 메웠다.',p=>{add(p,'happy',4);add(p,'bond',2);p.money-=rnd(500,2500)},'g',2),
+ FEST('wind1',(p,y)=>p.nid==='wind','사막에 보름달이 뜬 밤, 모래 마을 사람들이 천막을 치고 축제를 열었다. 낮의 열기가 가시고 악기 소리가 사막 위로 퍼졌다.',p=>{add(p,'happy',4);add(p,'bond',2)},'g',2),
+ FEST('water1',(p,y)=>p.nid==='water','안개 속에 수백 개의 등불이 떠올랐다. 안개 마을의 등불제였다. 서로 말없이 웃으며 한 해의 무사를 빌었다.',p=>{add(p,'happy',3);add(p,'bond',2)},'g',2),
+ FEST('light1',(p,y)=>p.nid==='lightning','구름 마을의 폭우가 그친 뒤 열린 큰 축제. 북소리가 천둥처럼 울렸고, 힘센 사내들이 바위를 들어 올리는 시합을 벌였다.',p=>{add(p,'happy',4)},'g',2),
+ FEST('earth1',(p,y)=>p.nid==='earth','바위 마을의 돌 조각 축제가 열렸다. 장인들이 솜씨를 겨루고 아이들은 작은 돌탑을 쌓았다.',p=>add(p,'happy',3),'g',2),
+ FEST('harvest',(p,y)=>NN(p).type!=='none'&&p.place!=='village'||p.place==='rural','가을 수확제가 열렸다. 새 곡식으로 지은 밥과 술이 돌고, 마을 사람들이 밤새 노래했다.',p=>{add(p,'happy',4);add(p,'bond',3)},'g',2),
+ FEST('newyear',(p,y)=>true,'새해 첫날, 한 해의 소원을 빌었다. 소원은 비밀로 했다.',p=>add(p,'happy',2),'g',2),
+ FEST('mem',(p,y,c)=>c.lv>=1&&NN(p).hid,'위령제가 열렸다. 전쟁에서 목숨을 잃은 이들을 기리는 등불이 줄지어 떠올랐다. 이름 하나하나가 낭독될 때마다 조용한 흐느낌이 번졌다.',p=>{add(p,'happy',-2);add(p,'bond',3)},'n',2),
+ FEST('nin',(p,y)=>NN(p).hid&&p.place==='village','닌자 마을의 큰 축제. 닌자들의 시범 공연과 분신술 쇼가 펼쳐졌고, 아이들이 쿠나이 던지기 노점에서 줄을 섰다.',p=>{add(p,'happy',4);if(isNin(p))add(p,'bond',2)},'g',2.5),
+ FEST('fish',(p,y)=>true,'축제 노점에서 금붕어 건지기를 했다. 종이 뜰채는 금세 찢어졌지만, 옆자리 꼬마가 한 마리를 나눠 주었다.',p=>add(p,'happy',3),'g',1.5),
+ {k:'fs_date',cd:6,w:p=>(p.age>=15&&p.age<=40&&!p.love&&!(p.fam.spouse&&p.fam.spouse.alive)&&p.track!=='rogue')?2.5:0,f:p=>{
+   ask(p,{title:'축제의 밤',body:'등불 아래 축제가 한창이다. 인파 속에서 눈이 마주친 사람이 있다. 상대가 먼저 시선을 피했지만, 그 자리에 계속 서성이고 있다.',opts:[
+    {l:'말을 걸어 본다',s:'용기를 낸다',a:5,f:p=>{L(p,'축제의 소란 속에서 용기를 내 말을 걸었다.','m');meetAsk(p)}},
+    {l:'친구들과 축제를 즐긴다',s:'',a:4,f:p=>{add(p,'happy',3);add(p,'bond',3);L(p,'친구들과 노점을 돌며 먹고 웃었다. 괜히 뒤를 돌아보게 되는 밤이었다.','g')}},
+    {l:'조용히 돌아간다',s:'',a:2,f:p=>{L(p,'인파가 부담스러워 일찍 돌아왔다.','n')}}]})}},
+ {k:'fs_love',cd:4,w:p=>(p.love||(p.fam.spouse&&p.fam.spouse.alive))&&p.age>=14?2:0,f:p=>{L(p,`${p.fam.spouse&&p.fam.spouse.alive?p.fam.spouse.name:p.love.name}${'와(과)'} 축제 구경을 갔다. 손을 잡고 불꽃놀이를 올려다보았다.`,'g');add(p,'happy',5);add(p,'bond',3);if(p.marScore!=null)p.marScore=Math.min(100,(p.marScore||50)+3)}}
+];
+// ---- 훅 ----
+const _step14=stepYear;
+stepYear=function(p){
+ _step14(p);
+ if(p.dead)return;
+ const y=p.born+p.age;const c={y,lv:warLv(p.nid,y)};
+ if(p.q.length<2&&ch(.013+c.lv*.004))runPool(p,c,EV_MURDER,1);
+ if(!p.dead&&p.q.length<2&&ch(.075))runPool(p,c,EV_FEST,1);
+};
+// 의료시설 후원 효과(소폭)
+const _grow14=growStats;
+growStats=function(p,c){_grow14(p,c);if(p.flags.medWing&&!p.dead)add(p,'health',.6)};
+// ================= ENGINE 15: health recovery, leader gating, big battles, life summary =================
+// ---- 건강 자연 회복 (잔병이 누적돼 바닥으로 가라앉는 문제 완화) ----
+const _grow15=growStats;
+growStats=function(p,c){
+ _grow15(p,c);if(p.dead)return;
+ const a=p.age,S=p.st;
+ if(a<45){const tgt=p.flags.chronic?58:74;if(S.health<tgt)S.health=cl(S.health+(tgt-S.health)*(a<18?.25:.24))}
+ else if(a<80){const tg=a<62?60:50;if(S.health<tg)S.health=cl(S.health+(tg-S.health)*.1)}
+};
+// ---- 중급닌자 이전에는 소대장·지휘 선택지 금지 ----
+for(const key in EV_ROLE){
+ EV_ROLE[key].forEach(e=>{
+  if(!e.f)return;const src=e.f.toString();
+  if(/지휘|소대|이끌/.test(src)&&!/rank>=2/.test(String(e.w))){const w0=e.w;e.w=(p,c)=>(p.rank>=2&&w0?w0(p,c):0)}
+ });
+}
+// ---- 큰 전투: 페인의 습격 / 제4차 인계대전 ----
+function bigBattle(p,key){
+ if(p.dead)return;
+ const sa=skAvg(p),nin=(p.track==='ninja'&&p.rank>=1)||(p.track==='academy'&&p.age>=11);
+ const risk=r=>cl(r*(1.25-sa/160)*(p.rank>=2?.85:1)*(p.st.health<35?1.25:1),.03,.7);
+ const fall=(pr,dtxt,ok)=>p=>{
+  if(ch(risk(pr))){
+   if(key==='pain'&&ch(.35)){L(p,'페인의 공격에 쓰러졌으나, 얼마 뒤 다시 눈을 떴다. 사람들은 그것을 기적이라 불렀다.','m');add(p,'happy',4);p.flags.revived=true;ach(p,'소생의 기적');return}
+   die(p,'war',pick(dtxt));return
+  }
+  ok(p);
+ };
+ const surv=(txt,fx)=>p=>{L(p,txt,'m');if(fx)fx(p)};
+ if(key==='pain'){
+  if(nin){
+   ask(p,{title:'페인의 습격',body:'하늘에서 충격파가 쏟아지고 마을이 무너져 내린다. 나는 닌자다. 지금 어디에 서야 할까?',opts:[
+    {l:'마을을 지키기 위해 적에게 맞선다',s:'가장 위험하다. 이름을 남길 수도 있다',a:3,f:fall(.34,['페인의 습격 때 마을을 지키려 맞서다 쓰러졌다.','페인의 신라천정에 휩쓸려 전사했다.','무너지는 마을 한복판에서 끝까지 맞서다 목숨을 잃었다.'],surv('페인에게 맞섰다. 살아남은 것은 기적에 가까웠다. 마을 사람들이 내 이름을 기억하게 되었다.',p=>{p.fame=(p.fame||0)+3;p.flags.trauma=(p.flags.trauma||0)+1;add(p,'health',-rnd(10,25));add(p,'happy',-6);ach(p,'페인의 습격에 맞서다')}))},
+    {l:'주민 대피를 돕는다',s:'무너지는 건물에서 사람들을 끌어낸다',a:4,f:fall(.12,['무너지는 건물 아래에서 아이들을 대피시키다 목숨을 잃었다.','주민을 감싸다 충격파에 휩쓸려 전사했다.'],surv('무너진 건물에서 사람들을 끌어내 대피시켰다. 손이 먼지와 피로 새까매졌다.',p=>{p.fame=(p.fame||0)+1.2;add(p,'bond',5);add(p,'happy',-3);tr(p,'kind',.5)}))},
+    {l:'부상자를 치료한다',s:'임시 치료소에서 쓰러진 이들을 살린다',a:p.role==='medic'?5:2,f:fall(.1,['임시 치료소를 지키다 충격파에 휩쓸려 목숨을 잃었다.'],surv('임시 치료소에서 쓰러진 사람들을 밤새 치료했다. 몇몇은 살리지 못했다.',p=>{p.fame=(p.fame||0)+1;sk(p,'nin',2);add(p,'happy',-4)}))},
+    {l:'몸을 숨긴다',s:'목숨은 지키지만 죄책감이 남는다',a:2,f:fall(.05,['무너진 건물 아래 숨었다가 목숨을 잃었다.'],surv('지하에 숨어 사태가 끝나기만을 기다렸다. 나온 뒤 폐허가 된 마을을 보며 오래 서 있었다.',p=>{tr(p,'guilt',.8);add(p,'happy',-8);dep(p,6)}))}
+   ]});
+  }else{
+   ask(p,{title:'페인의 습격',body:'하늘에서 충격파가 쏟아지고 거리가 무너졌다. 사람들이 비명을 지르며 달아난다.',opts:[
+    {l:'가족과 함께 대피한다',s:'안전한 곳으로 달아난다',a:5,f:fall(.05,['페인의 습격으로 폐허가 된 거리에서 목숨을 잃었다.','충격파에 휩쓸려 피난하던 길에서 세상을 떠났다.'],surv('가족과 함께 대피소로 달아났다. 돌아와 보니 집이 있던 자리에는 폐허뿐이었다.',p=>{add(p,'happy',-6);p.famMoney*=.8;p.money=Math.round(p.money*.7)}))},
+    {l:'이웃을 돕는다',s:'무너진 집에서 사람을 끌어낸다',a:3,f:fall(.12,['무너지는 집에서 이웃을 구하다 목숨을 잃었다.'],surv('무너진 집에서 이웃을 끌어냈다. 며칠이 지나도 손이 떨렸다.',p=>{add(p,'bond',6);add(p,'happy',-3);tr(p,'kind',.5);ach(p,'폐허 속의 이웃')}))},
+    {l:'집에 숨는다',s:'문을 걸어 잠근다',a:3,f:fall(.1,['무너진 집에 깔려 목숨을 잃었다.'],surv('집 안에서 숨을 죽였다. 소리가 멎은 뒤 바깥은 낯선 풍경이 되어 있었다.',p=>{add(p,'happy',-7);p.money=Math.round(p.money*.75)}))}
+   ]});
+  }
+ }
+ if(key==='war4'){
+  ask(p,{title:'제4차 인계대전',body:'연합군의 일원으로 전선에 섰다. 눈앞에서 되살아난 죽은 닌자들과 거대한 십미의 그림자가 밀려온다. 어디에 배치될까?',opts:[
+   {l:'최전선에서 싸운다',s:'가장 위험하다. 전쟁의 핵심에 선다',a:3,f:fall(.30,['제4차 인계대전 최전선에서 되살아난 죽은 닌자들에게 쓰러졌다.','제4차 인계대전에서 십미의 공격에 휩쓸려 목숨을 잃었다.','제4차 인계대전에서 동료를 지키려다 전사했다.','제4차 인계대전에서 백 제츠의 군단과 싸우다 목숨을 잃었다.'],surv('최전선에서 싸우고 살아남았다. 곁에서 싸우던 얼굴들이 하나둘 사라졌다.',p=>{p.fame=(p.fame||0)+3;p.flags.trauma=(p.flags.trauma||0)+2;add(p,'happy',-10);add(p,'health',-rnd(8,22));ach(p,'제4차 인계대전 참전')}))},
+   {l:'후방에서 의무·보급을 맡는다',s:'덜 위험하지만 비명이 끊이지 않는다',a:p.role==='medic'?5:3,f:fall(.07,['제4차 인계대전 중 후방 야전병원이 습격당해 목숨을 잃었다.'],surv('후방 야전병원에서 밤낮없이 사람들을 치료하고 물자를 날랐다. 이름 모를 병사들의 마지막 말을 오래 들었다.',p=>{p.fame=(p.fame||0)+1.2;sk(p,'nin',2);add(p,'happy',-5);add(p,'bond',3);ach(p,'제4차 인계대전 참전')}))},
+   {l:'별동대에 합류한다',s:'은밀한 작전에 투입된다',a:3,f:fall(.2,['제4차 인계대전 별동대 작전 중 매복에 당해 전사했다.','제4차 인계대전에서 적진 깊숙이 침투했다가 돌아오지 못했다.'],surv('별동대의 일원으로 적진을 휘저었다. 임무는 성공했지만 대원 둘이 돌아오지 못했다.',p=>{p.fame=(p.fame||0)+2;p.flags.trauma=(p.flags.trauma||0)+1;add(p,'happy',-7);ach(p,'제4차 인계대전 참전')}))}
+  ]});
+ }
+}
+// ---- 인생 요약: 큰 사건만 기록 ----
+const KEYCH=['쓰러진 동료와 임무 사이','양심의 갈림길','천재를 향한 암부의 제안','뱀의 눈이 훑는 곳','페인의 습격','제4차 인계대전','도적단의 습격','밤길에서 본 것','등 뒤의 시선','원수를 향한 마음','뒤쫓는 그림자','적에게 붙잡혔다','소환술 계약','탈주의 유혹'];
+const ACH_SKIP=['암부 입단','소년 암부','아카데미 졸업','결혼','이혼','차크라 속성 판정','이주','부모가 되다','S급 임무 완수'];
+const ACH_NOISE=/승격|수련|개화|발현|습득|완성|지도자|이름|소환술|계약|숙련|명인/;
+function mile(p,age,t,k){p.mile=p.mile||[];if(p.mile.some(m=>m.t===t&&m.a===age))return;p.mile.push({a:age,t,k:k||'n'})}
+function mileDiff(p,age){
+ p.mile=p.mile||[];const s=p.msnap||{init:true};
+ const kids=p.fam.kids.length,kal=p.fam.kids.filter(k=>k.alive).length,sp=p.fam.spouse?p.fam.spouse.name:null;
+ if(!s.init){
+  if(p.track==='academy'&&!p.did.mAcad){p.did.mAcad=1;mile(p,age,'닌자 아카데미에 입학','m')}
+  if(p.rank>s.rank){
+   if(p.rank===1)mile(p,age,'아카데미를 졸업하고 하급닌자가 되다','m');
+   else if(p.rank===2)mile(p,age,'중급닌자로 승격하다','m');
+   else if(p.rank===3)mile(p,age,p.sp?'특별 상급닌자로 임명되다':'상급닌자로 승격하다','m');
+  }
+  if(p.role!==s.role){
+   if(p.role==='anbu')mile(p,age,'암부에 발탁되다','m');
+   else if(p.role==='root')mile(p,age,'근(根)에 몸담다','m');
+   else if(p.role==='kage')mile(p,age,'카게의 자리에 오르다','m');
+   else if(s.track==='ninja'&&p.rank>=2&&p.role&&ROLES[p.role]&&!p.did['mRole'+p.role]){p.did['mRole'+p.role]=1;mile(p,age,`전문 분야를 정하다: ${(ROLES[p.role].n||ROLES[p.role])}`,'n')}
+  }
+  if(p.track!==s.track){
+   if(p.track==='rogue')mile(p,age,'마을을 등지고 탈주닌자가 되다','b');
+   else if(p.track==='retired'&&s.track==='ninja')mile(p,age,'일선에서 물러나다','n');
+   else if(p.track==='ninja'&&(s.track==='civ'||s.track==='child'))mile(p,age,'뒤늦게 닌자의 길에 들어서다','m');
+  }
+  if(p.nid!==s.nid)mile(p,age,`${NATIONS[p.nid].name}으로 이주하다`,'n');
+  if(sp&&sp!==s.sp)mile(p,age,`${sp}${'와(과)'} 결혼하다`,'g');
+  if(!sp&&s.sp){mile(p,age,p.flags.divorced&&p.flags.divAt===age||p.flags.divorced&&p.flags.divAt===s.age?'이혼하다':'배우자와 사별하다','b')}
+  if(kids>s.kids){mile(p,age,s.kids===0?'첫 아이를 얻다':`${kids}번째 아이가 태어나다`,'g')}
+  if(kal<s.kal&&kids===s.kids)mile(p,age,'아이를 잃다','b');
+  if(p.love&&!s.love&&!p.did.mLove){p.did.mLove=1;mile(p,age,`${p.love.name}${'와(과)'} 인연이 시작되다`,'g')}
+  if(p.flags.natureKnown&&!s.nk)mile(p,age,`차크라 종이 시험으로 속성을 알게 되다: ${p.nat.map(n=>NATURE[n].n).join('·')}`,'m');
+  if(p.flags.oroVictim&&!s.oro)mile(p,age,'오로치마루와 마주치다','b');
+  if(p.flags.chronic&&!s.chronic)mile(p,age,'몸이 만성적으로 상하다','b');
+  if(p.flags.deprOn&&!s.depr)mile(p,age,'마음이 무너져 힘든 시기를 겪다','b');
+  if(p.flags.alcohol&&!s.alc)mile(p,age,'술에 기대기 시작하다','b');
+  if(p.flags.revived&&!s.rev)mile(p,age,'페인의 공격에 쓰러졌다가 소생하다','m');
+  if(p.flags.tsuFriend&&!s.tsu)mile(p,age,'금발의 도박꾼 여인과 밤새 술잔을 나누다','g');
+  // 업적
+  (p.ach||[]).forEach(a=>{if(!(s.ach||[]).includes(a)&&!ACH_SKIP.includes(a)&&!ACH_NOISE.test(a))mile(p,age,`업적: ${a}`,'m')});
+  // 중요한 선택
+  (p.ch||[]).slice(s.nch||0).forEach(c=>{if(KEYCH.includes(c.t)&&!(/남는다|거절|지나친다/.test(c.c)&&['탈주의 유혹','국경을 넘어 이주할까'].includes(c.t))){p.did['mc'+c.t]=(p.did['mc'+c.t]||0)+1;if(p.did['mc'+c.t]<=(c.t==='쓰러진 동료와 임무 사이'?3:2))mile(p,c.a,`${c.t} — ${c.c}`,'n')}});
+  // 임무에서 크게 느낀 순간
+  p.log.slice(s.nlog||0).forEach(l=>{
+   if(/[AS]급 .*임무「/.test(l.t)&&(p.did.mMis||0)<6&&(/S급/.test(l.t)||l.k==='b'||(/A급/.test(l.t)&&(p.did.mA||0)<2&&(p.did.mA=(p.did.mA||0)+1)))){p.did.mMis=(p.did.mMis||0)+1;mile(p,l.a,l.t.replace(/\s*\([^)]*보수[^)]*\)\s*$/,'').slice(0,90)+(l.t.length>90?'…':''),l.k==='b'?'b':'m')}
+   if(/임무 중 목숨을 잃었다/.test(l.t)&&/팀원/.test(l.t))mile(p,l.a,l.t.slice(0,80),'b');
+  });
+ }
+ p.msnap={age:p.age,rank:p.rank,role:p.role,track:p.track,nid:p.nid,sp,spAlive:p.fam.spouse?p.fam.spouse.alive:false,kids,kal,love:!!p.love,nk:!!p.flags.natureKnown,oro:!!p.flags.oroVictim,chronic:!!p.flags.chronic,depr:!!p.flags.deprOn,alc:!!p.flags.alcohol,rev:!!p.flags.revived,tsu:!!p.flags.tsuFriend,ach:(p.ach||[]).slice(),nch:(p.ch||[]).length,nlog:p.log.length};
+}
+const _step15=stepYear;
+stepYear=function(p){
+ mileDiff(p,p.msnap&&p.msnap.age!=null?p.msnap.age:p.age);
+ _step15(p);
+ mileDiff(p,p.age);
+};
+function summaryList(p){
+ mileDiff(p,p.age);
+ const arr=(p.mile||[]).map((m,i)=>({...m,i})).sort((x,y)=>x.a-y.a||x.i-y.i);
+ return arr.map(m=>({...m,t:fixJosa(m.t)}));
+}
+// ================= ENGINE 16: academy instructor arc =================
+const isInst=p=>p.track==='ninja'&&p.role==='inst';
+function newStudent(p){const s=mkPerson(ch(.5)?'M':'F');return s.name}
+function pupilLost(p,n,why){
+ p.flags.pupilLost=(p.flags.pupilLost||0)+1;
+ L(p,`${n}${why||'을(를) 끝내 구하지 못했다.'} 손에 남은 감각이 오래 사라지지 않았다.`,'b');
+ add(p,'happy',-26);add(p,'bond',-6);dep(p,24);p.flags.trauma=(p.flags.trauma||0)+2;tr(p,'guilt',.9);
+ ach(p,'지키지 못한 학생');later(p,rnd(1,2),'pupilGrief',{n});
+}
+LATER.pupilGrief=(p,d)=>{
+ if(p.dead||!isInst(p))return;
+ ask(p,{title:'교단 앞에서',body:`${d.n}의 빈자리가 교실에 그대로 남아 있다. 학생들의 눈이 나를 향하지만, 칠판 앞에 서면 그날의 장면이 떠오른다.`,opts:[
+  {l:'계속 가르친다',s:'이 일을 잊지 않기 위해서라도',a:4,f:p=>{L(p,'다시 교단에 섰다. 이전보다 학생들의 안전에 집착하게 되었고, 학생들은 그 마음을 조금씩 알아 갔다.','m');tr(p,'cautious',.6);dep(p,-6);add(p,'happy',3)}},
+  {l:'유가족을 찾아간다',s:'용서를 구할 수 있을지는 모른다',a:3,f:p=>{if(ch(.55)){L(p,`${d.n}의 가족을 찾아가 고개를 숙였다. 어머니는 오래 울다가 "당신 탓만은 아니에요"라고 했다.`,'m');dep(p,-14);add(p,'happy',6)}else{L(p,`${d.n}의 가족을 찾아갔지만 문조차 열어 주지 않았다. 문 앞에서 오래 서 있었다.`,'b');dep(p,6);add(p,'happy',-6)}}},
+  {l:'교단을 떠나 현장으로 돌아간다',s:'가르치는 일이 두려워졌다',a:2,f:p=>{p.role='field';L(p,'교관직을 내려놓고 현장 임무로 돌아갔다. 어린 얼굴을 마주하는 일이 더는 견딜 수 없었다.','n');add(p,'happy',-4)}}
+ ]});
+};
+// ---- 아끼는 학생 ----
+LATER.pupilExam=(p,d)=>{
+ if(p.dead||!isInst(p))return;
+ ask(p,{title:'아끼는 학생의 졸업시험',body:`${d.n}이(가) 오늘 졸업시험을 치른다. 감독석에 앉은 손바닥이 땀으로 젖는다. 감독관이 사사로이 개입해서는 안 되지만, 마음은 이미 시험장 한복판에 서 있다.`,opts:[
+  {l:'평정을 유지하며 지켜본다',s:'규칙대로, 속으로만 응원한다',a:4,f:p=>{tr(p,'cautious',.3);passExam(p,d.n,.82,'평정을 유지하려 했지만 자꾸 주먹이 쥐어졌다.')}},
+  {l:'시험 전에 격려의 말을 건넨다',s:'학생에게 힘이 되지만 눈에 띈다',a:3,f:p=>{tr(p,'kind',.4);passExam(p,d.n,.88,'시험 전에 어깨를 두드려 주었다. "평소대로만 하면 돼."')}},
+  {l:'긴장을 못 이겨 자리를 뜬다',s:'결과는 나중에 듣는다',a:1,f:p=>{passExam(p,d.n,.72,'긴장을 못 이겨 시험장 밖 복도를 서성였다.')}}
+ ]});
+};
+function passExam(p,n,pr,pre){
+ if(ch(pr)){
+  L(p,`${pre} ${n}이(가) 이마 보호대를 받았다. 이름이 호명될 때 박수를 오래 쳤다.`,'m');add(p,'happy',8);add(p,'bond',4);p.fame=(p.fame||0)+.8;ach(p,'아끼던 제자의 졸업');
+  later(p,rnd(1,3),'pupilVisit',{n});later(p,rnd(5,10),'pupilFate',{n});
+ }else{
+  L(p,`${pre} ${n}은(는) 아쉽게 시험에 떨어졌다. 복도에서 어깨를 떨던 아이에게 "다음에 다시 하면 돼"라는 말밖에 해 줄 수 없었다.`,'b');add(p,'happy',-6);
+  later(p,rnd(1,2),'pupilRetry',{n});
+ }
+}
+LATER.pupilRetry=(p,d)=>{if(p.dead||!isInst(p))return;if(ch(.8)){L(p,`${d.n}이(가) 다시 시험에 도전해 합격했다. 보호대를 쥔 손이 떨리고 있었다.`,'m');add(p,'happy',7);later(p,rnd(5,9),'pupilFate',{n:d.n})}else{L(p,`${d.n}은(는) 결국 닌자의 길을 접고 가업을 잇기로 했다. 마지막 인사 때 한참 말이 없었다.`,'n');add(p,'happy',-3)}};
+LATER.pupilVisit=(p,d)=>{if(p.dead)return;L(p,`${d.n}이(가) 하급닌자가 되어 인사를 왔다. "선생님 덕분이에요." 작은 선물을 놓고 갔다.`,'g');add(p,'happy',6);add(p,'bond',3)};
+LATER.pupilFate=(p,d)=>{
+ if(p.dead)return;const r=R();
+ if(r<.5){L(p,`${d.n}이(가) 중급닌자로 승격했다는 소식을 들었다. 처음 교실에서 졸던 모습이 떠올라 웃음이 났다.`,'g');add(p,'happy',7);ach(p,'제자의 성장')}
+ else if(r<.7){L(p,`${d.n}이(가) 큰 전공을 세워 마을에서 이름이 알려졌다. 사람들이 "누구의 제자냐"고 묻는 일이 생겼다.`,'m');add(p,'happy',8);p.fame=(p.fame||0)+1.5}
+ else if(r<.88){L(p,`${d.n}이(가) 임무 중 전사했다는 소식을 들었다. 위령비에 새겨진 이름을 한참 쓰다듬었다.`,'b');add(p,'happy',-18);dep(p,18);p.flags.trauma=(p.flags.trauma||0)+1;tr(p,'guilt',.4)}
+ else{L(p,`${d.n}이(가) 마을을 떠나 행방이 묘연하다는 소문이 돌았다. 가르친 것이 옳았는지 오래 생각했다.`,'b');add(p,'happy',-9);dep(p,8)}
+};
+// ---- 교관 이벤트 풀 ----
+const iw=(f)=>p=>isInst(p)?f(p):0;
+EV_ROLE.inst.push(
+ {k:'ia1',w:iw(p=>1.6),cd:7,f:p=>{
+  const n=newStudent(p);
+  ask(p,{title:'야외 실습 중의 사고',body:`학생들을 데리고 야외 실습을 나왔다. 갑자기 ${n}이(가) 서 있던 절벽 가장자리가 무너져 내렸다. 학생이 낭떠러지에 매달려 비명을 지른다.`,opts:[
+   {l:'몸을 던져 구한다',s:'가장 빠르지만 내가 위험하다',a:5,f:p=>{
+     const r=R();
+     if(r<.58){L(p,`${n}의 손목을 가까스로 붙잡아 끌어올렸다. 학생은 울음을 터뜨렸고, 나는 그제야 손이 떨리는 것을 알았다.`,'m');p.fame=(p.fame||0)+1;add(p,'bond',5);add(p,'happy',3);tr(p,'brave',.4);ach(p,'학생을 구하다')}
+     else if(r<.88){L(p,`${n}을(를) 끌어올리다 균형을 잃고 바위에 부딪쳤다. 학생은 무사했지만 몸에는 깊은 상처가 남았다.`,'m');add(p,'health',-rnd(20,35));p.hosp=Math.max(p.hosp||0,1);p.fame=(p.fame||0)+1;add(p,'bond',4);tr(p,'brave',.4);ach(p,'학생을 구하다')}
+     else if(r<.94){die(p,'accident',`야외 실습 중 학생 ${n}을(를) 구하고 대신 절벽 아래로 떨어졌다.`)}
+     else pupilLost(p,n,'의 손을 끝내 놓치고 말았다.')}},
+   {l:'동료 교관을 부르러 달려간다',s:'혼자 무모하게 나서지 않는다',a:2,f:p=>{if(ch(.65)){L(p,`동료 교관과 함께 밧줄로 ${n}을(를) 끌어올렸다. 학생은 무사했지만 한동안 절벽 근처에는 가지 못했다.`,'n');add(p,'happy',-2)}else pupilLost(p,n,'을(를) 구조대가 도착하기 전에 잃었다.')}},
+   {l:'나머지 학생들부터 대피시킨다',s:'남은 아이들을 먼저 지킨다',a:3,f:p=>{L(p,'남은 학생들을 먼저 안전한 곳으로 대피시켰다. 규정에 맞는 판단이었지만 마음은 편치 않았다.','n');if(ch(.3))pupilLost(p,n,'을(를) 끝내 구하지 못했다.');else{L(p,`${n}은(는) 겨우 매달려 버티다 구조되었다. 한동안 나를 똑바로 보지 못했다.`,'n');add(p,'happy',-3)}}}
+  ]})}},
+ {k:'ia2',w:iw(p=>2.5),cd:4,f:p=>{
+  ask(p,{title:'시험 문제를 짜는 밤',body:'졸업시험 기간이다. 시험 문제를 직접 짜야 한다. 학생들의 수준과 변별력, 실전성을 모두 생각하다 보니 밤이 깊도록 머릿속이 복잡하다.',opts:[
+   {l:'어렵게 내서 변별력을 높인다',s:'탈락자가 늘지만 정예가 남는다',a:3,f:p=>{L(p,'밤새 머리를 싸매고 어려운 문제를 짰다. 시험 후 학생들의 원망 섞인 한숨이 복도를 메웠다.','n');add(p,'know',2);add(p,'happy',-2);tr(p,'cold',.3);p.tired=(p.tired||0)+1;p.flags.hardExam=(p.flags.hardExam||0)+1}},
+   {l:'실전 상황을 닮은 문제를 낸다',s:'시간이 오래 걸리지만 도움이 크다',a:4,f:p=>{L(p,'실전 사례를 바탕으로 시나리오형 문제를 직접 만들었다. 학생들은 시험이 끝난 뒤에도 토론을 멈추지 않았다.','m');add(p,'know',3);sk(p,'nin',1);p.fame=(p.fame||0)+.6;p.tired=(p.tired||0)+1.5}},
+   {l:'기본기 위주로 무난하게 낸다',s:'부담이 적다',a:3,f:p=>{L(p,'기본기 위주로 무난한 문제를 냈다. 수월한 시험에 학생들은 안도했고, 한 교관은 너무 쉽지 않았느냐고 지적했다.','n');add(p,'happy',1)}}
+  ]})}},
+ {k:'ia3',w:iw(p=>(!p.flags.pupil)?2.5:0),once:true,f:p=>{
+  const n=newStudent(p);p.flags.pupil=n;
+  L(p,`수업마다 눈빛이 남다른 학생이 있었다. ${n}. 실수를 해도 다시 일어나는 끈기가 마음에 들어 자꾸 눈이 갔다.`,'m');add(p,'happy',3);ach(p,'아끼는 학생');
+  later(p,rnd(2,4),'pupilExam',{n});
+ }},
+ {k:'ia4',w:iw(p=>2),cd:5,f:p=>{L(p,pick(['시험 채점 기간. 수백 장의 답안지를 밤새 넘기다 눈이 침침해졌다. 한 장 한 장 뒤에 아이들의 얼굴이 떠올랐다.','학생들의 답안지를 채점하다 의외의 재능을 가진 아이를 발견했다. 빨간 펜이 점점 느려졌다.','모의 전투 시험 감독을 맡았다. 아이들의 서툰 쿠나이 던지기를 보며 입가가 절로 풀렸다.']),'n');add(p,'know',1)}},
+ {k:'ia5',w:iw(p=>1.6),cd:6,f:p=>{
+  const n=newStudent(p);
+  ask(p,{title:'말썽꾸러기 학생',body:`${n}이(가) 또 수업 중에 사고를 쳤다. 다른 아이들의 도구를 숨기고 교실을 어질러 놓았다. 벌써 몇 번째인지 모른다.`,opts:[
+   {l:'따로 불러 이야기를 들어 준다',s:'시간이 걸리지만 원인을 찾는다',a:4,f:p=>{if(ch(.6)){L(p,`${n}을(를) 따로 불러 이야기를 들었다. 부모의 전사 소식을 들은 직후였다. 이후로 아이는 조금씩 달라졌다.`,'m');tr(p,'kind',.5);add(p,'happy',4)}else{L(p,`${n}은(는) 끝내 입을 열지 않았다. 그래도 매번 찾아가 곁에 앉아 있었다.`,'n');tr(p,'kind',.3)}}},
+   {l:'엄하게 벌을 준다',s:'확실하지만 아이가 움츠러든다',a:3,f:p=>{L(p,`${n}에게 엄하게 벌을 주었다. 이후 소란은 줄었지만, 아이는 나와 눈을 마주치지 않는다.`,'n');tr(p,'cold',.4);add(p,'happy',-2)}},
+   {l:'보호자와 면담한다',s:'규칙에 따른 대응',a:3,f:p=>{L(p,`${n}의 보호자를 불러 면담했다. 한참을 고개 숙이던 보호자가 돌아간 뒤 아이는 한동안 조용했다.`,'n')}}
+  ]})}},
+ {k:'ia6',w:iw(p=>1.4),cd:8,f:p=>{L(p,pick(['신입 교관에게 수업 요령을 알려 주었다. 어느새 내가 "선배"라 불리고 있었다.','학부모 한 명이 점수에 항의하러 찾아왔다. 한 시간을 설명한 끝에 겨우 돌려보냈다.','교실 창밖으로 아이들이 처음 분신술을 성공시키는 순간을 보았다. 환호성이 복도까지 울렸다.']),'n')}}
+);
+// ================= ENGINE 17: captives, ANBU witnesses, Byakugan, soft health =================
+const CAPT=[
+ {id:'boy',w:.25,n:p=>`아직 소년·소녀라 해도 믿을 만한 나이의 적 닌자`,fs:'소년',who:'소년'},
+ {id:'adult',w:.4,n:p=>'20대의 부상당한 적 닌자',fs:'청년',who:'청년'},
+ {id:'vet',w:.35,n:p=>'오랜 경험이 느껴지는 중년의 적 닌자',fs:'노련한 닌자',who:'노련한 닌자'}
+];
+{
+ const e=EV_ROLE.field.find(x=>x.k==='fd2');
+ if(e)e.f=p=>{
+  const t=wp(CAPT,c=>c.w);
+  const en=pick(NID.filter(x=>x!==p.nid&&NATIONS[x].hid));const eN=NATIONS[en].vil||NATIONS[en].name;
+  const nm=mkPerson(ch(.5)?'M':'F').name;
+  const base=`교전 끝에 ${eN}의 ${t.n(p)}를 붙잡았다. 이름은 ${nm}. 팔에 난 상처를 움켜쥔 채 나를 노려본다.`;
+  const opts=[
+   {l:'후방으로 호송한다',s:'규정대로. 심문부로 넘어가며 이후는 내 손을 떠난다',a:4,f:p=>{
+     L(p,`${nm}을(를) 후방 심문부로 인계했다. 규정대로였다.`,'n');
+     if(t.id!=='boy'&&ch(.45)){p.fame=(p.fame||0)+.8;L(p,`심문부는 ${nm}에게서 중요한 정보를 얻어 냈다. 내 이름이 보고서에 올랐다.`,'m')}
+     if(ch(.18))later(p,rnd(2,6),'capSwap',{n:nm,t:t.id,e:eN});}},
+   {l:'몰래 놓아준다',s:'발각되면 문책. 훗날 은혜가 돌아올 수도, 원한이 돌아올 수도 있다',a:2,f:p=>{
+     tr(p,'kind',.8);tr(p,'defiant',.5);add(p,'happy',4);
+     L(p,`${nm}을(를) 몰래 놓아주었다. 등을 돌리며 오래 마음이 무거웠다. (이 일이 훗날 어떤 모습으로 돌아올지는 아직 모른다.)`,'m');
+     later(p,rnd(1,3),'capFound',{n:nm,t:t.id,e:eN,a:p.age});later(p,rnd(4,11),'capFate',{n:nm,t:t.id,e:eN,a:p.age})}},
+   {l:'처형한다',s:'후환을 없앤다. 마음에 흔적이 남고, 상대의 동료가 기억할 수 있다',a:1,f:p=>{
+     p.kills+=1;const cold=hasT(p,'cold');tr(p,'cold',1);
+     if(cold){add(p,'happy',-2);L(p,`${nm}을(를) 처형했다. 아무 감정도 일지 않았다는 사실이 오히려 서늘했다.`,'b')}
+     else{add(p,'happy',-12);p.flags.trauma=(p.flags.trauma||0)+1;dep(p,t.id==='boy'?14:8);L(p,`후환을 없애려 ${nm}을(를) 처형했다. 손에 남은 감촉이 지워지지 않았다.`,'b')}
+     if(ch(t.id==='boy'?.22:.14))later(p,rnd(4,10),'capAvenge',{n:nm,t:t.id,e:eN})}}
+  ];
+  if(t.id!=='boy')opts.splice(1,0,{l:'현장에서 정보를 캐낸다',s:'바로 정보를 얻지만 잔혹해질 수 있다',a:3,f:p=>{
+     if(ch(.55)){p.fame=(p.fame||0)+1.2;tr(p,'cold',.4);L(p,`${nm}에게서 적의 이동 경로를 캐냈다. 임무에 큰 도움이 되었지만 방법이 마음에 걸렸다.`,'m')}
+     else{tr(p,'cold',.3);add(p,'happy',-3);L(p,`${nm}은(는) 끝내 입을 열지 않았다. 시간만 허비했다.`,'n')}}});
+  ask(p,{title:'사로잡은 적',body:base,opts});
+ };
+}
+LATER.capFound=(p,d)=>{
+ if(p.dead||p.track==='rogue')return;
+ if(ch(.3)){
+  L(p,`놓아준 ${d.n}이(가) 다른 팀에게 붙잡혀 심문부로 끌려갔다. 심문 과정에서 내 이름이 나왔다.`,'w');
+  ask(p,{title:'심문부의 호출',body:'심문부가 나를 불렀다. "몇 해 전 포로를 놓아주었다는 진술이 나왔다. 사실인가?"',opts:[
+   {l:'사실대로 말한다',s:'문책을 각오한다',a:4,f:p=>{L(p,'사실대로 말했다. 근신 처분과 함께 한동안 감시가 따라붙었다. 하지만 거짓말은 하지 않았다는 사실이 조금 가벼웠다.','b');p.fame=(p.fame||0)-1.5;add(p,'happy',-4);tr(p,'loyal',.3)}},
+   {l:'모른다고 부인한다',s:'증거가 없으면 넘어가지만, 들통나면 더 큰 처벌',a:3,f:p=>{if(ch(.5)){L(p,'증거가 없다며 부인했고 조사는 흐지부지 끝났다. 등에 식은땀이 흘렀다.','n');tr(p,'cold',.2)}else{L(p,'부인이 거짓임이 드러났다. 명성에 큰 흠이 생겼고 한동안 임무에서 제외되었다.','b');p.fame=(p.fame||0)-3;add(p,'happy',-8)}}},
+   {l:'포로가 먼저 덤볐다고 둘러댄다',s:'위험한 변명',a:2,f:p=>{if(ch(.4)){L(p,'그럴듯한 변명이 먹혀 질책으로 끝났다.','n');p.fame=(p.fame||0)-.5}else{L(p,'변명의 앞뒤가 맞지 않았다. 문책과 함께 불신의 시선이 따라붙었다.','b');p.fame=(p.fame||0)-2.5;add(p,'happy',-6)}}}
+  ]});
+ }
+};
+LATER.capFate=(p,d)=>{
+ if(p.dead||p.track==='rogue')return;
+ const yrs=p.age-d.a;
+ const w={thanks:d.t==='boy'?.45:.3,avenge:d.t==='boy'?.2:.3,none:.25,help:.15};
+ const k=wp(Object.keys(w),x=>w[x]);
+ if(k==='thanks'){L(p,`${yrs}년 전 놓아준 ${d.n}이(가) 찾아와 고개를 숙였다. "그날 당신이 아니었다면 나는 없었습니다." 이후 한동안 서로 소식을 주고받았다.`,'g');add(p,'happy',8);add(p,'bond',5);ach(p,'놓아준 적의 감사');tr(p,'kind',.3)}
+ else if(k==='help'){L(p,`${yrs}년 전 놓아준 ${d.n}이(가) 위험한 순간 은밀히 정보를 흘려 주었다. 그 덕분에 임무에서 큰 화를 피했다.`,'m');p.fame=(p.fame||0)+1.5;add(p,'happy',5);ach(p,'놓아준 적의 보답')}
+ else if(k==='avenge')capAvenge(p,{n:d.n,t:d.t,e:d.e,mercy:true,yrs});
+ else{L(p,`${yrs}년 전 놓아준 ${d.n}의 소식은 끝내 들리지 않았다. 어딘가에서 살아 있기를 바랄 뿐이다.`,'n')}
+};
+LATER.capAvenge=(p,d)=>capAvenge(p,d);
+function capAvenge(p,d){
+ if(p.dead||p.track==='rogue')return;
+ const why=d.mercy?`놓아준 ${d.n}이(가) ${d.e}의 닌자가 되어 나타났다. 은혜를 잊은 것이 아니라, 그 뒤에 벌어진 일의 책임을 내게 묻는 눈이었다.`:`${d.n}의 ${d.t==='boy'?'가족':'동료'}가 복수를 위해 나를 찾아냈다. 그날의 처형을 잊지 않은 이들이다.`;
+ ask(p,{title:'과거가 찾아오다',body:why,opts:[
+  {l:'맞서 싸운다',s:'이길 수도, 질 수도 있다',a:3,f:p=>{
+    if(ch(cl(.5+(skAvg(p)-50)/120,.2,.8))){L(p,'치열한 싸움 끝에 상대를 물리쳤다. 그러나 원한의 고리는 끝나지 않을 것이다.','m');p.kills+=1;add(p,'health',-rnd(8,20));add(p,'happy',-5);p.fame=(p.fame||0)+1}
+    else if(ch(.4)){die(p,'revenge',`과거에 얽힌 원한으로 찾아온 ${d.n}에게 목숨을 잃었다.`)}
+    else{L(p,'싸움에서 크게 패하고 간신히 살아남았다. 몸에는 깊은 상처가 남았다.','b');add(p,'health',-rnd(20,35));add(p,'happy',-8);p.hosp=Math.max(p.hosp||0,1)}}},
+  {l:'사정을 설명하고 대화한다',s:'칼을 거두게 할 수 있을지도 모른다',a:4,f:p=>{
+    const okp=d.mercy?.6:.3;
+    if(ch(okp)){L(p,'오래 이야기를 나눴다. 상대는 칼을 거두고 말없이 돌아갔다. 완전한 화해는 아니었지만 더는 찾아오지 않았다.','m');add(p,'happy',4);tr(p,'kind',.3)}
+    else{L(p,'대화는 통하지 않았다. 상대는 증오만을 남기고 사라졌다. 언젠가 다시 올 것이다.','b');add(p,'happy',-6);dep(p,4)}}},
+  {l:'피한다',s:'일단 몸을 숨긴다',a:2,f:p=>{L(p,'만남을 피해 거처를 옮겼다. 한동안 뒤를 돌아보는 버릇이 생겼다.','n');add(p,'happy',-5);p.money-=rnd(5000,20000)}}
+ ]});
+}
+LATER.capSwap=(p,d)=>{if(p.dead||p.track==='rogue')return;if(d.t==='boy'){L(p,`호송했던 ${d.n}은(는) 포로 교환으로 고향에 돌아갔다고 한다. 그 아이가 무사하다니 마음이 놓였다.`,'n');add(p,'happy',2)}else{L(p,`호송했던 ${d.n}이(가) 포로 교환 협상 끝에 ${d.e}로 돌아갔다는 소식을 들었다. 언젠가 전장에서 다시 마주칠 수도 있다.`,'n')}};
+
+// ---- 암부: 민간인 목격자 ----
+EV_ROLE.anbu.push({k:'ab_wit',cd:3,w:p=>p.role==='anbu'?2.5:0,f:p=>{
+ const tag=hasT(p,'cold');
+ ask(p,{title:'목격자',body:'극비 임무를 마치고 철수하려는 순간, 우연히 지나가던 민간인이 현장을 보고 말았다. 얼굴도, 가면도, 시신도 본 눈이다. 암부의 원칙은 단 하나다. 목격자는 남기지 않는다.',opts:[
+  {l:'원칙대로 제거한다',s:'암부의 규율. 마음에 짐이 남는다(냉철한 성격이면 덜하다)',a:4,f:p=>{
+    p.kills+=1;
+    if(tag){add(p,'happy',-2);L(p,'원칙대로 목격자를 제거했다. 아무 감정도 일지 않았다. 그 사실을 알고 있는 것은 나뿐이었다.','b');tr(p,'cold',.3)}
+    else{add(p,'happy',-24);add(p,'bond',-6);dep(p,22);p.flags.trauma=(p.flags.trauma||0)+2;tr(p,'guilt',.6);tr(p,'cold',.4);L(p,'원칙대로 목격자를 제거했다. 눈을 감아도 마지막 표정이 떠올랐다. 며칠 동안 아무것도 먹지 못했다.','b')}}},
+  {l:'살려 준다',s:'원칙 위반. 들통나면 문책. 하지만 훗날 무엇이 돌아올지 모른다',a:2,f:p=>{
+    tr(p,'kind',.8);tr(p,'defiant',.5);add(p,'happy',3);L(p,'목격자를 살려 보냈다. "오늘 본 것은 꿈이다"라고 말했다. 그가 입을 다물지는 알 수 없다.','m');later(p,rnd(1,4),'witFate',{a:p.age})}},
+  ...(p.sk.gen>=45?[{l:'환술로 기억을 지운다',s:'성공하면 흔적이 없다. 실패하면 위험하다',a:3,f:p=>{if(ch(.68)){tr(p,'cautious',.3);L(p,'환술로 목격자의 기억을 지웠다. 그는 아무 일도 없었다는 듯 걸어갔다.','m');sk(p,'gen',1)}else{L(p,'환술이 어설프게 풀렸다. 목격자는 기억의 파편을 안은 채 사라졌다.','b');later(p,rnd(1,3),'witFate',{a:p.age,bad:true})}}}]:[])
+ ]})}});
+LATER.witFate=(p,d)=>{
+ if(p.dead||p.track==='rogue')return;
+ const r=R()-(d.bad?.25:0);
+ if(r<.35){L(p,'살려 보낸 민간인은 끝까지 입을 다물었다. 가끔 시장에서 마주치면 서로 모르는 척 지나갔다.','n');add(p,'happy',3)}
+ else if(r<.62){L(p,'살려 보낸 목격자가 정체를 눈치챈 이들에게 붙잡혀 사실이 드러났다. 상부는 원칙 위반을 크게 질책했다.','b');p.fame=(p.fame||0)-2.5;add(p,'happy',-7);add(p,'bond',-4)}
+ else if(r<.8){L(p,'목격자가 술자리에서 본 것을 떠들었다는 소문이 돌았다. 암부는 사태를 수습했지만, 책임은 내게 돌아왔다.','b');p.fame=(p.fame||0)-2;add(p,'happy',-8);add(p,'health',-rnd(2,8))}
+ else{L(p,'살려 보낸 목격자가 어느 날 조용히 감사 인사를 전하고 떠났다. 서로 이름도 모르는 사이였다.','g');add(p,'happy',6);ach(p,'원칙 너머의 자비')}
+};
+
+// ---- 휴우가 일족: 백안 ----
+const hy=p=>p.clan==='hyuga'&&p.age>=6;
+SHARED_NIN.push(
+ {k:'hy1',cd:3,w:p=>hy(p)&&p.track==='ninja'&&p.rank>=1?2.2:0,f:p=>{L(p,pick(['임무 중 백안으로 숲 너머 3km 밖의 적 매복을 감지했다. 팀은 무사히 우회로를 택했다.','백안을 열자 바위 뒤에 숨은 적의 차크라 흐름이 선명히 보였다. 선제 공격으로 임무를 마무리했다.','백안으로 인질의 위치와 적의 수를 파악해 구출 작전을 성공시켰다.']),'m');p.fame=(p.fame||0)+.8;add(p,'bond',2);sk(p,'gen',.5)}},
+ {k:'hy2',cd:5,w:p=>hy(p)&&p.track==='ninja'&&p.rank>=1?1.4:0,f:p=>{L(p,'백안의 사각, 등 뒤 한 점을 노린 적의 기습을 받았다. 완벽한 눈에도 약점은 있다는 사실을 몸으로 배웠다.','b');add(p,'health',-rnd(8,18));tr(p,'cautious',.4)}},
+ {k:'hy3',cd:4,w:p=>hy(p)?1.6:0,f:p=>{L(p,pick(['일족 어른에게 회천과 팔괘장 수련을 받았다. 한 걸음, 한 번의 숨까지 지적받았다.','밤샘 수련 끝에 처음으로 경혈 하나를 정확히 짚었다. 일족 어른이 말없이 고개를 끄덕였다.']),'g');sk(p,'tai',1.5);add(p,'know',1)}},
+ {k:'hy4',once:true,w:p=>(hy(p)&&!p.hyugaMain&&p.age>=12)?1.5:0,f:p=>{
+   ask(p,{title:'종가의 명령',body:'분가의 나에게 종가가 위험한 임무를 맡겼다. 일족의 규율상 거절하기 어렵다. 이마의 인장이 무겁게 느껴진다.',opts:[
+    {l:'묵묵히 따른다',s:'분가의 숙명을 받아들인다',a:4,f:p=>{L(p,'명령대로 임무를 수행했다. 성공했지만 칭찬은 종가의 몫으로 돌아갔다.','n');add(p,'happy',-4);tr(p,'loyal',.5)}},
+    {l:'의견을 올린다',s:'규율을 거스른다',a:2,f:p=>{if(ch(.35)){L(p,'일족 어른들이 내 의견을 들어 주었다. 작지만 분명한 변화였다.','m');add(p,'happy',6);p.fame=(p.fame||0)+.5}else{L(p,'감히 의견을 올렸다는 이유로 호된 질책을 받았다.','b');add(p,'happy',-7);tr(p,'defiant',.4)}}}
+   ]})}}
+);
+
+// ---- 건강이 덜 닳도록 ----
+const _grow17=growStats;
+growStats=function(p,c){
+ const h0=p.st.health;_grow17(p,c);if(p.dead)return;
+ // 자연 노화·누적 손실을 일부 상쇄(손실의 25%를 되돌림)
+ const d=p.st.health-h0;if(d<0)p.st.health=cl(p.st.health-d*.25);
+};
+
+// ================= 조기 입학 / 조기 졸업 =================
+function enrollEarly(p){
+ p.did.enroll=true;p.track='academy';p.gradAge=p.age+rnd(4,6);p.flags.earlyEnroll=p.age;
+ add(p,'bond',-2);add(p,'know',2);
+ L(p,`${p.age}살의 나이로 ${NN(p).vil} 닌자 아카데미에 조기 입학했다. 교실의 다른 아이들보다 머리 하나는 작았다.`,'m');
+ ach(p,'조기 입학');
+}
+function earlyEnrollAsk(p,tries){
+ const base=p.ftype==='clan'?.62:p.ftype==='ninja'?.68:p.ftype==='orphan'?.5:.32;
+ const prob=cl(base+(p.tal-70)/120+(p.st.know-18)/80-tries*.17,.08,.9);
+ const who=p.ftype==='orphan'?p.fam.guardian:'부모님';
+ const opts=[{l:tries?'다시 간절히 설득한다':'아카데미에 가고 싶다고 말해 본다',s:tries?`${who}가 거절한 뒤다. 성공 확률이 낮아졌지만 끈질기게 매달려 볼 수 있다`:`${who}의 허락이 필요하다. 거절당할 수도 있다`,a:5,f:p=>{
+   if(ch(prob)){L(p,`"${p.age}살에 아카데미라니…" ${who}는 한참 고민하다 끝내 입학을 허락했다.`,'m');enrollEarly(p)}
+   else if(tries>=2){L(p,`${who}는 끝내 허락하지 않았다. 원래 나이가 되면 가라는 말뿐이었다.`,'n');add(p,'happy',-4);p.flags.earlyFail=true}
+   else{L(p,`${who}는 고개를 저었다. "아직 어리다. 몇 년만 더 기다리렴."`,'n');add(p,'happy',-3);if(tries)tr(p,'defiant',.3);
+     ask(p,{title:'거절당했다',body:`${who}가 입학을 허락하지 않았다. 포기할 것인가, 다시 설득해 볼 것인가.`,opts:[
+       {l:'다시 설득한다',s:'끈질기게 조른다. 성공 확률은 낮아지고 사이가 서먹해질 수 있다',a:4,f:p=>{add(p,'bond',-2);earlyEnrollAsk(p,tries+1)}},
+       {l:'원래 나이로 들어간다',s:'6살이 되면 정식으로 입학한다',a:5,f:p=>{L(p,'조급해하지 않기로 했다. 원래 나이가 되면 아카데미에 가기로 했다.','n');p.flags.earlyFail=true}}
+     ]})}}},
+  {l:'원래 나이에 들어간다',s:'6살이 되면 정식으로 입학한다',a:4,f:p=>{L(p,'아직은 때가 아니라고 생각했다.','n');p.flags.earlyFail=true}}];
+ ask(p,{title:'조기 입학',body:`${p.age}살. 또래보다 훨씬 영리하고 차크라 감각이 남다르다. 마을 아카데미는 보통 6살부터 받아 주지만, 일찍 가고 싶다는 마음이 커진다.`,opts});
+}
+const _step18=stepYear;
+stepYear=function(p,...r){
+ const o=_step18(p,...r);
+ if(p.dead)return o;
+ const N=NN(p);
+ // 조기 입학: 닌자 마을 출신, 4~5세
+ if(p.track==='child'&&p.age>=4&&p.age<=5&&!p.did.enroll&&!p.flags.earlyFail&&!p.flags.noAcademy&&!p.did.earlyAsked&&N.hid&&p.place==='village'&&p.tal>=66&&p.st.know>=16&&ch(.8)){
+  p.did.earlyAsked=1;earlyEnrollAsk(p,0);
+ }
+ // 조기 졸업: 아카데미 재학 중, 졸업 예정보다 일찍
+ if(p.track==='academy'&&p.age>=6&&p.age<p.gradAge&&!p.did.earlyGradAsked&&!p.flags.gradDone&&p.tal>=68){
+  const sc=p.tal*.35+p.st.know*.25+skAvg(p)*.4;
+  if(sc>=27&&ch(.7)){
+   p.did.earlyGradAsked=1;
+   ask(p,{title:'조기 졸업 시험',body:`교관이 나를 따로 불렀다. "네 실력이면 졸업시험에 지금 응시해도 되겠다. 다만 떨어지면 동기들 사이에서 웃음거리가 될 수 있다." 정규 졸업까지는 ${p.gradAge-p.age}년이 남았다.`,opts:[
+    {l:'지금 졸업시험을 본다',s:'합격하면 남들보다 몇 해 앞서 닌자가 된다. 떨어질 수도 있다',a:5,f:p=>{p.gradAge=p.age;p.flags.earlyGrad=true;L(p,'교관의 추천으로 조기 졸업시험에 응시하기로 했다. 시험은 올해 안에 치러진다.','m')}},
+    {l:'정해진 때까지 더 배운다',s:'충분히 준비하고 졸업한다',a:4,f:p=>{L(p,'서두르지 않고 아카데미에서 더 배우기로 했다.','n');sk(p,'nin',1);add(p,'know',1)}}
+   ]});
+  }
+ }
+ // 조기 졸업 직후 천재 승급
+ if(p.track==='ninja'&&p.rank===1&&p.flags.earlyGrad&&p.age<=9&&!p.did.prodigyPromo&&p.age-(p.flags.gradAt||p.age)>=1){
+  p.did.prodigyPromo=1;
+  if(p.tal>=82&&ch(.45)){p.rank=2;L(p,`어린 나이에 보인 활약이 인정되어 특별히 중급닌자로 승격되었다. 마을에서는 보기 드문 천재라는 소문이 돌았다.`,'m');ach(p,'천재 소년 중급닌자');p.fame=(p.fame||0)+2.5}
+ }
+ if(p.track==='ninja'&&p.rank===1&&!p.flags.gradAt)p.flags.gradAt=p.age;
+ return o;
+};
+// ================= ENGINE 18: 탈주닌자의 가족 (두고 온 사람들) =================
+const rogueOn=p=>p.track==='rogue';
+const kidNm=k=>k.name.split(' ')[1];
+const _kidDie18=kidDie;
+kidDie=function(p,k,c,cause){
+ if(!k.left)return _kidDie18(p,k,c,cause);
+ k.alive=false;k.dAge=k.age;
+ L(p,`풍문으로 두고 온 아이 ${I(k.name)} ${cause.replace('세상을 떠났다','세상을 떠났다는 소식을 들었다').replace('돌아오지 못했다','돌아오지 못했다는 소식을 들었다')} 장례에도 갈 수 없었다. 이름조차 부를 수 없었다.`,'b');
+ add(p,'happy',-30);dep(p,24);p.flags.trauma=(p.flags.trauma||0)+2;tr(p,'guilt',.8);
+};
+// 잠입해서 지켜볼까, 혼자 떠올릴까
+function rogueKidAsk(p,k,kind){
+ const nm=kidNm(k);
+ const T={school:{title:`${nm}의 입학식`,body:`올해 ${jo(nm,'이가')} 여섯 살이 된다. 지금쯤이면 아카데미에 갈 나이다. 마을에는 현상금이 걸린 내 얼굴이 붙어 있다.`,
+    see:`${nm}의 입학식을 멀리서 지켜보았다. 낯선 교복을 입은 작은 등이 교문으로 들어갔다. 한마디도 건넬 수 없었다. 앞날을 응원한다고 속으로만 말했다.`,
+    think:`${jo(nm,'이가')} 지금쯤 아카데미에 갔을까. 아니면 평범한 아이로 크고 있을까. 알 길이 없었다.`},
+   grad:{title:`${nm}의 졸업`,body:`${jo(nm,'이가')} 아카데미를 졸업할 때가 되었다고 한다. 이마 보호대를 받는 날이다. 아이는 ${p.sex==='M'?'아버지':'어머니'}가 마을을 등진 탈주닌자라는 사실을 알고 있을까.`,
+    see:`${nm}의 졸업식을 군중 속에서 지켜보았다. 이마 보호대를 단 아이의 얼굴을 눈에 새기고 돌아섰다. 앞날을 응원한다.`,
+    think:`${jo(nm,'이가')} 지금쯤 이마 보호대를 받았을까. 그 보호대가 아이를 지켜 주기를 빌었다.`},
+   later:{title:`${nm}의 소식`,body:`${jo(nm,'이가')} 어느새 ${k.age}살이 되었다. 마을 근처 국경 마을 소문으로 아이의 안부를 들을 수 있을지도 모른다.`,
+    see:`${jo(nm,'이가')} 사는 마을에 몰래 들러 멀리서 얼굴만 보았다. 많이 컸다. 아이는 나를 알아보지 못했다.`,
+    think:`${jo(nm,'은는')} 지금 어떻게 살고 있을까. 이름을 부를 수도 없는 사람이 되었다.`}}[kind];
+ ask(p,{title:T.title,body:T.body,opts:[
+  {l:'몰래 마을에 잠입해 지켜본다',s:'들키면 추적닌자가 몰려온다. 보고 나면 마음은 조금 가벼워진다',a:3,f:p=>{
+    const ok=cl(.58+skAvg(p)/220+(p.sk.gen||0)/400-(p.bounty||0)/2500000,.3,.9);
+    if(ch(ok)){L(p,T.see,'m');add(p,'happy',7);dep(p,-8);if(ch(.18)){L(p,'멀리서 눈이 마주친 것 같았다. 아이는 곧 시선을 돌렸다.','n')}ach(p,'멀리서 지켜본 아이')}
+    else{L(p,`${jo(nm,'을를')} 보려다 잠입이 들통났다. 추적닌자들이 마을 밖까지 따라붙었다.`,'b');p.bounty=(p.bounty||0)+100000;add(p,'happy',-3);hunterFight(p,'flee')}}},
+  {l:'가지 않고 혼자 생각한다',s:'위험은 피한다. 대신 그리움만 남는다',a:4,f:p=>{L(p,T.think,'n');add(p,'happy',-3);tr(p,'loner',.2)}}
+ ]});
+}
+const _kt18=kidTick;
+kidTick=function(p,k,c){
+ if(!k.left)return _kt18(p,k,c);
+ if(!k.alive)return;
+ const lv=c.lv;
+ let h=((k.age<1?.02:k.age<5?.006:k.age<15?.001:.0012)+lv*(k.ninja&&k.age>=12?.011:.0008))*.6;
+ if(ch(h)){
+  kidDie(p,k,c,k.ninja&&k.age>=12&&lv>=1?'임무 중 전사했다.':pick(['병으로 세상을 떠났다.','사고로 세상을 떠났다.']));return;
+ }
+ if(k.age===6&&!k.decided){k.decided=true;k.ninja=ch(.3)&&NN(p).hid;k.acad=k.ninja;if(k.ninja)k.gradAt=k.age+rnd(5,7);rogueKidAsk(p,k,'school')}
+ if(k.ninja&&k.acad&&k.age===(k.gradAt||12)&&!k.grad){k.grad=true;k.rank=1;rogueKidAsk(p,k,'grad')}
+ if(k.age===14&&k.alive&&!p.did['rk14'+k.name]&&ch(.45)){p.did['rk14'+k.name]=1;rogueKidAsk(p,k,'later')}
+};
+// 처음 탈주할 때: 가족을 두고 떠나는 한 줄
+const _step18r=stepYear;
+stepYear=function(p,...r){
+ const o=_step18r(p,...r);
+ if(p.flags.defected&&!p.did.rogueFam&&!p.dead){
+  p.did.rogueFam=1;
+  const hasS=p.fam.spouse&&p.fam.spouse.alive,kids=p.fam.kids.filter(k=>k.alive);
+  if(hasS||kids.length){
+   const who=[hasS?`배우자 ${p.fam.spouse.name}`:null,kids.length?`아이${kids.length>1?'들':''}`:null].filter(Boolean).join('와 ');
+   L(p,`${jo(who,'을를')} 남겨 두고 떠났다. 편지 한 통 보낼 수 없다. 이름은 마을에서 금기가 될 것이다.`,'b');
+   add(p,'happy',-8);kids.forEach(k=>{k.guard='ex';k.left=true});if(hasS)p.fam.spouse.left=true;
+  }
+ }
+ // 탈주 상태에서의 그리움(가끔)
+ if(p.flags.defected&&!p.dead&&!p.q.length&&p.age-(p.flags.rMissAt==null?-9:p.flags.rMissAt)>=5&&ch(.12)){
+  const kids=p.fam.kids.filter(k=>k.alive&&k.left&&k.age<18),hasS=p.fam.spouse&&p.fam.spouse.alive&&p.fam.spouse.left;
+  if(kids.length||hasS){
+   p.flags.rMissAt=p.age;const k=kids.length?pick(kids):null;
+   L(p,k?pick([`밤하늘을 올려다보며 ${jo(kidNm(k),'이가')} 잘 자고 있을지 생각했다.`,`길에서 ${kidNm(k)}와 비슷한 또래 아이를 보고 한참 걸음을 멈췄다.`,`${kidNm(k)}의 생일이 지나갔다. 아무에게도 말하지 않았다.`]):`두고 온 ${p.fam.spouse.name}의 얼굴이 문득 떠올랐다. 이제는 돌아갈 수 없는 사람이다.`,'n');
+   add(p,'happy',-2);
+  }
+ }
+ return o;
+};
+// 탈주 이후 태어나는 아이: 풍문
+{const _b=LATER.birth;LATER.birth=function(p){
+ if(!(sp(p)&&sp(p).left))return _b(p);
+ if(!sp(p).alive)return;
+ const k=addKid(p);k.guard='ex';k.left=true;L(p,`풍문으로 ${sp(p).name}가 아이를 낳았다는 소식을 들었다. 얼굴도 보지 못한 아이다.`,'n');add(p,'happy',-3);};}
+
+// 남겨 둔 배우자가 있으면 새 아이 계획/제안 이벤트 없음
+EV_ANY.forEach(e=>{if(e.k==='kidplan'){const w=e.w;e.w=(p,c)=>(p.fam.spouse&&p.fam.spouse.left)?0:w(p,c)}});
+{const _fc=LATER.firstChild;LATER.firstChild=function(p){if(p.fam.spouse&&p.fam.spouse.left)return;return _fc(p)}}
 // ================= UI =================
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -2510,20 +3072,21 @@ function bar(label,v){return `<div class="bar"><span>${label}</span><i><u style=
 function renderLife(){
  const p=S.p,c=ctxOf(p),N=NN(p);
  const ninja=p.track==='academy'||isNin(p)||p.rank>0;
- const vis=p.log.slice(0,Math.min(S.vis,p.log.length)).reverse();const shown=S.more?vis:vis.slice(0,60);
+ const vis=p.log.slice(0,Math.min(S.vis,p.log.length)).reverse();const shown=vis.slice(0,300);
  const peers=S.peers.map(q=>`<div class="peer ${q.dead?'dead':''}"><div class="k" style="background:${NATIONS[q.nid].col}">${NATIONS[q.nid].kj}</div><div>${esc(q.name)} · ${q.age}세<span>${NATIONS[q.nid].name} · ${statusText(q)}</span></div></div>`).join('');
  const mp=Array.from({length:Math.max(80,p.map.length)},(_,i)=>`<i class="${i<p.map.length?'ph-'+p.map[i]:''} ${i===p.map.length-1?'cur':''}" title="${i}세"></i>`).join('');
+const focusHtml=p.age>=6?`<div class="focus"><div class="fh">올해의 초점</div><div class="chips">${Object.keys(FOCI).map(k=>`<button class="chip sm ${p.focus===k?'on':''}" data-f="${k}">${FOCI[k]}</button>`).join('')}</div><p class="hint" style="margin:6px 0 0">${FOCI_D[p.focus]}</p>${S.dl?`<p class="hint" style="margin:3px 0 0">지난해 변화: ${S.dl}</p>`:''}${(p.tired||0)>=30?`<p class="hint" style="margin:3px 0 0;color:#b04a3a">피로 ${(p.tired||0)>=55?'위험':'높음'} — 쉬지 않으면 건강이 크게 상합니다.</p>`:''}</div>`:'';
  $('#life').innerHTML=`<div class="wrap">
  <div class="top"><div class="row"><div class="age disp">${p.age}<small>세</small></div><div class="era"><b>${eraName(c.y)}</b>${yearLabel(c.y)}${c.lv>=1.2?' · 전란':''}</div><div class="mini"><button class="chip sm" id="bf">가족</button><button class="chip sm" id="bn">차크라</button></div></div>
  <div class="ctl"><button class="chip" id="pp">${S.paused?'▶ 재생':'❚❚ 멈춤'}</button>${[1,2,4,8,16].map(s=>`<button class="chip ${S.speed===s?'on':''}" data-s="${s}">${s}×</button>`).join('')}<button class="chip" id="nx">다음 »</button><span class="grow"></span><button class="chip ${S.auto?'on':''}" id="au">자동 결정</button></div><label class="chk sm"><input type="checkbox" id="sm" ${S.same?'checked':''}><span>같은 질문이 나오면 이전과 같은 답으로 자동 선택</span></label></div>
  <div class="card prof"><h2 class="disp">${esc(p.name)}</h2><div class="sub">${N.name} ${esc(N.vil||p.where)} · ${esc(rankLabel(p))}</div>
  ${p.flags.natureKnown?`<div>${natChips(p)}</div>`:''}
  ${(traitPills(p).length||isDepr(p)||p.flags.alcohol)?`<div style="margin-top:4px">${isDepr(p)?'<span class="pill">우울</span>':''}${p.flags.alcohol?'<span class="pill">술에 의존</span>':''}${traitPills(p).map(t=>`<span class="pill">${t}</span>`).join('')}</div>`:''}
+ ${focusHtml}
  <div class="bars">${bar('건강',p.st.health)}${bar('행복',p.st.happy)}${bar('지식',p.st.know)}${bar('관계',p.st.bond)}</div>
  ${ninja?`<div class="sep"></div><div class="bars">${bar('차크라',p.sk.chakra)}${bar('체술',p.sk.tai)}${bar('인술',p.sk.nin)}${bar('환술',p.sk.gen)}</div>`:''}
  <div class="sep"></div><div style="font-size:14px">재산 ${fmtMoney(p.age<16?p.famMoney:p.money)} (${wealthLabel(p)})${p.fam.spouse&&p.fam.spouse.alive?` · 배우자 ${esc(p.fam.spouse.name)}`:p.love?` · 연인 ${esc(p.love.name)}`:''}${p.fam.kids.filter(k=>k.alive).length?` · 자녀 ${p.fam.kids.filter(k=>k.alive).length}명`:''}</div></div>
- ${p.age>=6?`<div class="card"><h2>올해의 초점</h2><div class="chips">${Object.keys(FOCI).map(k=>`<button class="chip ${p.focus===k?'on':''}" data-f="${k}">${FOCI[k]}</button>`).join('')}</div><p class="hint" style="margin:8px 0 0">${FOCI_D[p.focus]}</p>${S.dl?`<p class="hint" style="margin:4px 0 0">지난해 변화: ${S.dl}</p>`:''}${(p.tired||0)>=30?`<p class="hint" style="margin:4px 0 0;color:#b04a3a">피로 ${(p.tired||0)>=55?'위험':'높음'} — 쉬지 않으면 건강이 크게 상합니다.</p>`:''}</div>`:''}
- <div class="card"><h2>인생 기록</h2><ul class="log">${shown.map((l,i)=>`<li class="${l.k}${i===0?' new':''}"><b class="ag">${l.a}세</b><small>${yearLabel(l.y)}</small><span>${esc(l.t)}</span></li>`).join('')}</ul>${!S.more&&vis.length>60?'<button class="chip" id="more" style="margin-top:10px">지난 기록 더 보기</button>':''}</div>
+ <div class="card"><h2>인생 기록</h2><div class="logbox"><ul class="log">${shown.map((l,i)=>`<li class="${l.k}${i===0?' new':''}"><b class="ag">${l.a}세</b><small>${yearLabel(l.y)}</small><span>${esc(l.t)}</span></li>`).join('')}</ul></div></div>
  <div class="card"><h2>같은 해에 태어난 사람들</h2><p class="hint">같은 시대, 다른 곳에서 태어난 네 아이도 각자의 삶을 삽니다.</p>${peers}</div>
  <div class="card"><h2>인생 지도</h2><p class="hint">한 칸이 1년입니다.</p><div class="map">${mp}</div><div class="leg">${[['child','유년'],['acad','아카데미'],['genin','하급닌자'],['chunin','중급닌자'],['jonin','상급닌자'],['anbu','암부'],['rogue','탈주'],['civ','민간'],['ret','은퇴']].map(([k,t])=>`<span><b class="ph-${k}"></b>${t}</span>`).join('')}</div></div>
  <button class="btn sec" id="bg">세계관 도감</button><button class="btn sec" id="ex">이 삶에서 나가기</button></div>`;
@@ -2533,7 +3096,6 @@ function renderLife(){
  $('#sm').onchange=e=>{S.same=e.target.checked;if(S.same&&S.p.q.length&&!S.modal){}};$('#au').onclick=()=>{S.auto=!S.auto;if(S.auto&&S.p.q.length&&!S.busy){closeSheet(true);autoResolve(S.p,true)}renderLife();resume()};
  $('#bf').onclick=openFamily;$('#bn').onclick=openNature;$('#bg').onclick=()=>openGuide('nat');
  $('#ex').onclick=()=>{if(confirm('이 삶을 여기서 끝낼까요? 기록에는 남지 않습니다.')){clearTimeout(S.timer);renderHome()}};
- const mo=$('#more');if(mo)mo.onclick=()=>{S.more=true;renderLife()};
  document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{p.focus=b.dataset.f;renderLife()});
 }
 function loop(){clearTimeout(S.timer);if(S.paused||S.modal||!S.p||S.p.dead||S.busy)return;S.timer=setTimeout(advance,Math.max(250,msYear()*.3))}
@@ -2557,8 +3119,8 @@ function revealStep(){
  loop();
 }
 // ---------- sheets ----------
-function openSheet(html){S.modal=true;clearTimeout(S.timer);let bg=$('#sheetbg');bg.classList.add('on');$('#sheet').innerHTML=html;$('#sheet').scrollTop=0}
-function closeSheet(silent){$('#sheetbg').classList.remove('on');S.modal=false;if(!silent&&!S.p.dead){renderLife();resume()}}
+function openSheet(html){$('#sheetbg').classList.remove('peek');$('#peekbar').style.display='none';S.modal=true;clearTimeout(S.timer);let bg=$('#sheetbg');bg.classList.add('on');$('#sheet').innerHTML=html;$('#sheet').scrollTop=0}
+function closeSheet(silent){$('#sheetbg').classList.remove('on','peek');$('#peekbar').style.display='none';S.modal=false;if(!silent&&!S.p.dead){renderLife();resume()}}
 function afterChoose(p){
  if(p.dead){closeSheet(true);finish();return}
  if(S.auto)autoResolve(p,true);
@@ -2610,7 +3172,8 @@ function showDecision(){
  if(sameAns(p)){if(p.dead){closeSheet(true);finish();return}if(!p.q.length){closeSheet();return}}
  const d=p.q[0];
  if(d.anim==='paper'){paperAnim(p,d);return}
- openSheet(`<h2 class="disp">${esc(d.title)}</h2><p class="b">${esc(d.body)}</p>${d.opts.map((o,i)=>`<button class="opt" data-i="${i}"><b>${esc(o.l)}</b>${o.s?`<span>${esc(o.s)}</span>`:''}</button>`).join('')}`);
+ openSheet(`<button class="chip sm peekb" id="peek">잠시 내려서 상황 보기</button><h2 class="disp">${esc(d.title)}</h2><p class="b">${esc(d.body)}</p>${d.opts.map((o,i)=>`<button class="opt" data-i="${i}"><b>${esc(o.l)}</b>${o.s?`<span>${esc(o.s)}</span>`:''}</button>`).join('')}`);
+ $('#peek').onclick=()=>{$('#sheetbg').classList.add('peek');$('#peekbar').style.display='flex'};
  document.querySelectorAll('#sheet .opt').forEach(b=>b.onclick=()=>{
   const dd=p.q.shift();resolveDecision(p,dd,+b.dataset.i);
   afterChoose(p);
@@ -2643,7 +3206,7 @@ function openNature(){
  if(!p.flags.natureKnown){openSheet(`<h2 class="disp">차크라 속성</h2><p class="b">아직 자신의 속성을 알지 못한다. 보통 닌자 아카데미에서 차크라 종이 시험을 보면 알 수 있다.</p><p class="hint">불·바람·물·흙·번개 다섯 가지가 기본이다.</p><button class="btn sec" id="cl">닫기</button>`);$('#cl').onclick=()=>closeSheet();return}
  let h=`<h2 class="disp">차크라 속성</h2><p class="b">차크라 종이로 확인한 속성입니다.</p>`;
  h+=p.nat.map((n,i)=>`<div class="nrow"><div class="k" style="background:${NATURE[n].col}">${NATURE[n].k}</div><div><b>${NATURE[n].n} (${NATURE[n].j})${i===0?' · 주 속성':''}</b><br>${NATURE[n].d}<br><span style="color:var(--mute)">강한 상대: ${NATURE[BEATS[n]].n} · 약한 상대: ${NATURE[NK.find(x=>BEATS[x]===n)].n}</span></div></div>`).join('');
- if(p.kg&&(p.kg.done||p.flags.natureKnown&&p.kg.type==='combo'&&p.kg.done))h+=`<div class="sep"></div><b>혈계한계: ${esc(p.kg.n)}</b><p style="margin:4px 0">${esc(p.kg.d)}${p.kg.done?'<br>이미 깨어났다.':''}</p>`;
+ if(p.kg&&(p.kg.done||p.flags.natureKnown&&p.kg.type==='combo'&&p.kg.done))h+=`<div class="sep"></div><b>${p.kg.hiden?'가문 비전':'혈계한계'}: ${esc(p.kg.n)}</b><p style="margin:4px 0">${esc(p.kg.d)}${p.kg.done?'<br>이미 깨어났다.':''}</p>`;
  h+=`<div class="sep"></div><b>속성의 상성</b><p style="margin:4px 0;font-size:14px">불 > 바람 > 번개 > 흙 > 물 > 불</p>`;
  if(p.jin)h+=`<p style="font-size:14px">인주력: ${esc(p.jin)}</p>`;
  h+=`<button class="btn sec" id="cl" style="margin-top:12px">닫기</button>`;
@@ -2656,7 +3219,7 @@ function openGuide(tab){
  if(tab==='nat')h+=NID.map(id=>{const N=NATIONS[id];return `<div class="nrow"><div class="k" style="background:${N.col}">${N.kj}</div><div><b>${N.name}${N.vil?' · '+N.vil:''}</b><br>${N.desc}${N.ldr?`<br><span style="color:var(--mute)">지도자 호칭: ${N.ldr}</span>`:''}</div></div>`}).join('');
  if(tab==='rank')h+=`<div style="font-size:14.5px"><p><b>닌자의 길</b><br>아카데미 학생 → 하급닌자 → 중급닌자 → 상급닌자. 하급닌자는 3인 1조 팀에서 D·C급 임무를 맡고, 중급닌자 선발시험이나 전공으로 중급닌자가 되면 팀장이 됩니다. 상급닌자는 마을의 정예이고, 한 분야에 특출한 사람은 특별 상급닌자가 되기도 합니다.</p><p><b>전문 분야</b><br>전투닌자, 의료닌자, 정보부, 아카데미 교관, 감지닌자, 인형술사(모래 마을), 봉인술사, 추적닌자.</p><p><b>암부(暗部)</b><br>카게 직속의 비밀 정예. 암살과 호위를 맡고, 이름과 관계를 잃습니다.</p><p><b>탈주닌자</b><br>이마 보호대에 선을 긋고 마을을 떠난 자. 현상금이 걸리고 추적닌자에게 쫓깁니다.</p><p><b>민간인</b><br>농부, 어부, 장인, 가게 주인, 의원, 여관 주인, 상인, 사무라이(철의 나라) 등. 세상 대부분의 사람들입니다. 전쟁이 나면 징집되거나 피난길에 오르기도 합니다.</p><p><b>임무 등급</b><br>D(잡무) → C(호위·순찰) → B → A → S(국가 기밀급).</p></div>`;
  if(tab==='ele')h+=NK.map(n=>`<div class="nrow"><div class="k" style="background:${NATURE[n].col}">${NATURE[n].k}</div><div><b>${NATURE[n].n} (${NATURE[n].j})</b><br>${NATURE[n].d}</div></div>`).join('')+`<p style="font-size:14px">상성: 불 > 바람 > 번개 > 흙 > 물 > 불</p>`+COMBOS.map(c=>`<div class="nrow"><div><b>${c.n}</b> (${c.a.map(x=>NATURE[x].n).join('+')})<br>${c.d}</div></div>`).join('')+`<p class="hint">두 속성을 합친 혈계한계는 매우 드뭅니다.</p>`;
- if(tab==='time'){const ev=[[-80,'일족 전란이 끝나고 닌자 마을 제도가 자리 잡음'],[-70,'제1차 인계대전'],[-42,'제2차 인계대전'],[-33,'소용돌이 마을 멸망'],[-14,'제3차 인계대전'],[-2,'3차 대전 종결'],[0,'구미 습격, 나루토 탄생'],[7,'우치하 일족 사건'],[12,'중급닌자 시험과 나뭇잎 붕괴 작전'],[14,'안개 마을 피의 안개 시대 종결'],[16,'페인의 습격'],[17,'5카게 회담과 제4차 인계대전'],[18,'대전 종결, 닌자 연합'],[30,'나루토 7대 호카게 취임'],[32,'보루토 시대의 위협']];h+=`<ul class="tl">${ev.map(([y,t])=>`<li>${t}<small>${yearLabel(y)}</small></li>`).join('')}</ul><p class="hint">시점은 나루토가 태어난 해를 0으로 둔 대략적인 기준입니다.</p>`}
+ if(tab==='time'){const ev=[[-14,'제3차 인계대전'],[-2,'3차 대전 종결'],[0,'구미 습격, 나루토 탄생'],[7,'우치하 일족 사건'],[12,'중급닌자 시험과 나뭇잎 붕괴 작전'],[14,'안개 마을 피의 안개 시대 종결'],[16,'페인의 습격'],[17,'5카게 회담과 제4차 인계대전'],[18,'대전 종결, 닌자 연합'],[30,'나루토 7대 호카게 취임'],[32,'보루토 시대의 위협']];h+=`<ul class="tl">${ev.map(([y,t])=>`<li>${t}<small>${yearLabel(y)}</small></li>`).join('')}</ul><p class="hint">시점은 나루토가 태어난 해를 0으로 둔 대략적인 기준입니다.</p>`}
  h+=`<button class="btn sec" id="cl" style="margin-top:14px">닫기</button>`;
  openSheet(h);
  document.querySelectorAll('#sheet [data-t]').forEach(b=>b.onclick=()=>openGuide(b.dataset.t));
@@ -2674,14 +3237,13 @@ async function finish(){
  const text=`[닌자 세계에서 한 번뿐인 삶]\n${p.name} (${N.name}${N.vil?' '+N.vil:''})\n${yearLabel(p.born)}에 태어나 ${p.death&&p.death.missing?p.age+'세에 마을을 떠났다. 그 뒤 행방은 알려지지 않았다.':p.age+'세에 세상을 떠났다.'}\n속성: ${p.nat.map(n=>NATURE[n].n).join('·')} / 마지막 신분: ${rankLabel(p)}\n${p.death.text}`;
  $('#death').innerHTML=`<div class="wrap"><div class="dcard"><div class="glyph">${N.kj}</div><h2 class="disp">${esc(p.name)}</h2><p style="margin:0 0 10px;color:var(--mute)">${N.name} · ${yearLabel(p.born)} ~ ${yearLabel(p.born+p.age)}</p>
  <p style="font-size:17px;font-weight:700;margin:0 0 12px">${esc(sum[0])}</p>
- <dl class="kv"><dt>신분</dt><dd>${esc(rankLabel(p))}</dd><dt>${p.flags.natureKnown?'속성':'숨은 속성'}</dt><dd>${natChips(p)}</dd>${p.kg?`<dt>혈계한계</dt><dd>${esc(p.kg.n)}</dd>`:''}<dt>집안</dt><dd>${FAMNAME[p.ftype]}${p.clan?` · ${CLANS[p.clan].n} 일족`:''}</dd><dt>가족</dt><dd>${p.fam.spouse?'결혼 · ':'독신 · '}자녀 ${kids}명</dd>${missTotal(p)?`<dt>임무</dt><dd>D ${p.mis.D} · C ${p.mis.C} · B ${p.mis.B} · A ${p.mis.A} · S ${p.mis.S}</dd>`:''}<dt>마지막 재산</dt><dd>${fmtMoney(p.money)}</dd></dl>
+ <dl class="kv"><dt>신분</dt><dd>${esc(rankLabel(p))}</dd><dt>${p.flags.natureKnown?'속성':'숨은 속성'}</dt><dd>${natChips(p)}</dd>${p.kg?`<dt>${p.kg.hiden?'가문 비전':'혈계한계'}</dt><dd>${esc(p.kg.n)}</dd>`:''}<dt>집안</dt><dd>${FAMNAME[p.ftype]}${p.clan?` · ${CLANS[p.clan].n} 일족`:''}</dd><dt>가족</dt><dd>${p.fam.spouse?'결혼 · ':'독신 · '}자녀 ${kids}명</dd>${missTotal(p)?`<dt>임무</dt><dd>D ${p.mis.D} · C ${p.mis.C} · B ${p.mis.B} · A ${p.mis.A} · S ${p.mis.S}</dd>`:''}<dt>마지막 재산</dt><dd>${fmtMoney(p.money)}</dd></dl>
  ${p.ach.length?`<p style="margin:12px 0 0">${p.ach.map(a=>`<span class="pill">${esc(a)}</span>`).join('')}</p>`:''}
  ${traitPills(p).length?`<p style="margin:12px 0 0">${traitPills(p).map(t=>`<span class="pill">${t}</span>`).join('')}</p>`:''}
  ${p.thoughts&&p.thoughts.length?`<p style="margin:12px 0 0;color:var(--mute);font-size:14px">남긴 말: ${p.thoughts.map(t=>`"${esc(t.t)}"(${t.a}세)`).join(' ')}</p>`:''}</div>
- ${p.ch.length?`<div class="card"><h2>갈림길에서의 선택</h2><ul class="log">${p.ch.slice(0,40).map(c=>`<li class="n"><b class="ag">${c.a}세</b><span>${esc(c.t)}: <b>${esc(c.c)}</b></span></li>`).join('')}</ul></div>`:''}
+ <div class="card"><h2>인생 요약</h2><p class="hint" style="margin:0 0 8px">이 삶의 가장 큰 순간들입니다.</p><ul class="log sumlog">${summaryList(p).map(m=>`<li class="${m.k}"><b class="ag">${m.a}세</b><span>${esc(m.t)}</span></li>`).join('')}<li class="d"><b class="ag">${p.age}세</b><span>${esc(p.death.text)}</span></li></ul></div>
  <div class="card"><h2>같은 해에 태어난 사람들</h2>${S.peers.map(q=>`<div class="peer ${q.dead?'dead':''}"><div class="k" style="background:${NATIONS[q.nid].col}">${NATIONS[q.nid].kj}</div><div>${esc(q.name)} · ${q.age}세<span>${NATIONS[q.nid].name} · ${statusText(q)}</span></div></div>`).join('')}</div>
- <div class="card"><h2>인생 지도</h2><div class="map">${Array.from({length:Math.max(80,mp)},(_,i)=>`<i class="${i<mp?'ph-'+p.map[i]:''}"></i>`).join('')}</div></div>
- <div class="card"><h2>이 삶의 기록</h2><ul class="log">${p.log.filter(l=>l.k==='m'||l.k==='w'||l.k==='d').map(l=>`<li class="${l.k}"><b>${l.a}세</b> ${esc(l.t)}</li>`).join('')}</ul></div>
+ <div class="card"><h2>인생 지도</h2><p class="hint" style="margin:0 0 8px">한 칸이 1년입니다. 색은 그 해의 신분을 뜻합니다.</p><div class="map">${Array.from({length:Math.max(80,mp)},(_,i)=>`<i class="${i<mp?'ph-'+p.map[i]:''}"></i>`).join('')}</div><div class="legend">${[['child','유년'],['acad','아카데미'],['genin','하급닌자'],['chunin','중급닌자'],['jonin','상급닌자'],['anbu','암부'],['rogue','탈주'],['civ','민간인'],['ret','은퇴'],['dead','사망']].map(([k,t])=>`<span><i class="ph-${k}"></i>${t}</span>`).join('')}</div></div>
  <div class="shotfoot">닌자 세계에서 한 번뿐인 삶</div><div data-html2canvas-ignore="true"><button class="btn" id="sv">이미지로 저장하기</button><button class="btn sec" id="again">다시 태어나기</button><button class="btn sec" id="cp">기록 복사하기</button><button class="btn sec" id="hm">처음으로</button></div></div>`;
  $('#sv').onclick=saveShot;
  show('death');
@@ -2710,7 +3272,7 @@ function drawFallback(){
  T(`${p.age}세, ${p.death.text}`,36,true,'#1d2433',20);
  T(`신분  ${rankLabel(p)}`,30,false,'#1d2433',4);
  T(`${p.flags.natureKnown?'속성':'숨은 속성'}  ${p.nat.map(n=>NATURE[n].n).join('·')}`,30,false,'#1d2433',4);
- if(p.kg)T(`혈계한계  ${p.kg.n}`,30,false,'#1d2433',4);
+ if(p.kg)T(`${p.kg.hiden?'가문 비전':'혈계한계'}  ${p.kg.n}`,30,false,'#1d2433',4);
  T(`집안  ${FAMNAME[p.ftype]}${p.clan?' · '+CLANS[p.clan].n+' 일족':''}`,30,false,'#1d2433',4);
  T(`가족  ${p.fam.spouse?'결혼':'독신'} · 자녀 ${p.fam.kids.length}명`,30,false,'#1d2433',16);
  const pl=[...p.ach,...traitPills(p)];if(pl.length)T(pl.join(' · '),28,true,col,16);
@@ -2738,4 +3300,6 @@ async function saveShot(){
  btn.disabled=false;btn.textContent='이미지로 저장하기';
  if(url)showShot(url,'ninja-life-'+p.name.replace(/\s/g,'_'));else btn.textContent='이미지를 만들 수 없어요';
 }
+
+$('#peekbtn').onclick=()=>{$('#sheetbg').classList.remove('peek');$('#peekbar').style.display='none'};
 </script></body></html>
