@@ -662,8 +662,7 @@ function worldEvents(p,c){
  if(y===-2&&(NID_GREAT.includes(n)))L(p,'3차 인계대전이 끝났다는 소식이 닿았다. 나뭇잎의 젊은 영웅이 호카게에 올랐다는 이야기도 함께 퍼졌다.','w');
  if(y===0&&n==='fire'&&vl){
   L(p,'10월 10일 밤. 나뭇잎 마을에 거대한 아홉 꼬리 여우(구미)가 나타나 마을을 짓밟았다. 하늘이 붉게 물들고 닌자들이 목숨을 걸고 맞섰다. 4대 호카게 미나토의 희생으로 구미는 봉인되었다.','w');
-  if(adultNin&&ch(.18)){die(p,'bijuu','구미의 습격에 맞서 싸우다 목숨을 잃었다.');return}
-  if(a>=14&&ch(.04)){die(p,'bijuu','무너지는 건물에 깔려 목숨을 잃었다.');return}
+  if(kyuubiNight(p,a,adultNin))return;
   p.fam.parents.forEach(q=>{if(!q.dead&&!q.unk&&ch(q.ninja?.3:.1)){q.dead=true;q.dcause='구미의 습격';L(p,q.rel+'('+q.name+')가 구미의 습격에서 목숨을 잃었다.','b');add(p,'happy',-15);add(p,'bond',-10)}});
   p.famMoney*=.7;p.flags.kyuubi=true;add(p,'happy',-5);
  }
@@ -928,7 +927,7 @@ const EV_KID=[
  {k:'skillsnack',w:()=>2,f:p=>{L(p,'축제에서 상인에게 닌자도구를 구경하고 쿠나이를 던져 봤다. 아슬아슬하게 빗나갔다.','g');add(p,'happy',3)}}
 ];
 const EV_ACAD=[
- {k:'basics',once:true,w:p=>p.age>=7?8:3,f:p=>{sk(p,'nin',4);L(p,'변신술·변이술·분신술. 아카데미 3대 기본술을 익혔다. 분신이 처음 나왔을 땐 핼쑥했다.','g')}},
+ {k:'basics',once:true,w:p=>p.age>=7?8:3,f:p=>{sk(p,'nin',4);L(p,'변신술, 분신술, 수리검술을 아카데미에서 익혔다. 분신이 처음 나왔을 땐 핼쑥했다.','g')}},
  {k:'shuriken',w:()=>4,f:p=>{sk(p,'tai',2.5);L(p,'수리검 표적 훈련. 마지막 한 발이 정중앙에 박혔다. 교관이 고개를 끄덕였다.','g')}},
  {k:'spar',w:()=>4,f:p=>{const win=p.sk.tai+gauss()*10>20;L(p,win?'체술 대련에서 동급생을 이겼다.':'체술 대련에서 호되게 졌다. 멍이 일주일 갔다.',win?'g':'b');add(p,'happy',win?3:-3);sk(p,'tai',win?2:1)}},
  {k:'paper',once:true,w:p=>p.age>=9?20:0,f:p=>{const ns=p.nat.map(n=>NATURE[n].paper).join(', 이어서 ');L(p,`차크라 종이 시험에서 ${ns}. 속성: ${p.nat.map(n=>NATURE[n].n).join('·')}.`,'m');p.flags.natureKnown=true;ach(p,'차크라 속성 판정');if(p.kg&&p.kg.type==='combo')L(p,`교관의 눈빛이 달라졌다. "${p.kg.n}"의 가능성이 있다.`,'m')}},
@@ -964,18 +963,19 @@ function missionYear(p,c){
  if(p.track!=='ninja'||p.rank<1)return;
  const lv=c.lv;
  const rk=p.rank,role=p.role;
- const w=role==='anbu'||role==='root'?{D:0,C:0,B:1,A:3.5,S:2}:rk===1?{D:5,C:3.2,B:.5+lv*.3,A:0,S:0}:rk===2?{D:1,C:3,B:3,A:.9+lv*.4,S:0}:{D:0,C:1,B:3,A:3,S:.7+lv*.3};
+ const w=role==='anbu'||role==='root'?{D:0,C:0,B:1,A:3.5,S:2}:rk===1?{D:6,C:1+lv*.3,B:0,A:0,S:0}:rk===2?{D:0,C:3,B:3,A:.7+lv*.3,S:0}:{D:0,C:0,B:3,A:3,S:.5+lv*.25};
  if(role==='inst'){w.D+=3;w.A*=.3;w.S*=.2}
  if(role==='medic'&&p.flags.medTrain>p.age){w.D=5;w.C=1;w.B=0;w.A=0;w.S=0}
  const cls=wp(['D','C','B','A','S'],k=>w[k]);if(!cls)return;
  const diff={D:8,C:25,B:40,A:55,S:70}[cls];
  const sc=skAvg(p)+p.tal*.15+(p.team?3:0);
+ const gap=({D:12,C:30,B:46,A:62,S:80})[cls]-sc;const pf=cl(Math.exp(gap/20),.35,5);
  const times=rk===1?rnd(6,12):rnd(4,8);
  p.mis[cls]+=times;
  const DESC={D:['고양이 수색','밭일 도우미','마을 청소','짐 나르기','아이 돌보기'],C:['상인 호위','수상한 소문 조사','국경 순찰','소규모 도적 소탕','편지 배달'],B:['요인 경호','밀수 조직 추적','무장 단체 소탕','기밀 문서 운반'],A:['적국 요인 호위·암살 지원','비밀 거점 파괴','대규모 요인 호위'],S:['대규모 암살 침투','적 정예와 정면 대결','비밀 병기 파괴']};
  const rd=ROLE_DESC[role==='root'?'anbu':role];const d=pick((rd&&rd[cls])||DESC[cls]);
  const success=ch(cl(.62+(sc-diff)/120-((p.depr||0)>=30?.09:0)-(p.flags.alcohol?.05:0),.2,.97));
- const risk={D:.0004,C:.003,B:.01,A:.025,S:.06}[cls]*(1+lv*.6)*(cl(1.4-sc/100,.5,1.5))*(role==='medic'?.6:role==='inst'?.3:role==='anbu'?1.5:role==='intel'?.8:1)*(1-Math.min(.2,(p.flags.gear||0)*.04))*({charge:1.25,support:.85,duel:1.1,ambush:.95}[p.flags.style]||1);
+ const risk={D:.0004,C:.003,B:.01,A:.025,S:.06}[cls]*(1+lv*.6)*pf*(role==='medic'?.6:role==='inst'?.3:role==='anbu'?1.5:role==='intel'?.8:1)*(1-Math.min(.2,(p.flags.gear||0)*.04))*({charge:1.25,support:.85,duel:1.1,ambush:.95}[p.flags.style]||1);
  const dead=ch(risk*(success?.6:1.7));
  const tm=p.team&&p.rank===1&&p.age<18?'팀원들과 ':'';
  if(dead){die(p,'mission',missionDeath(p,cls,d));return}
@@ -992,7 +992,10 @@ function missionYear(p,c){
   L(p,(rd&&role!=='field'||role==='field'&&rk>=2)?roleLine(p,cls,d,false,tm):`${tm}${cls}급 임무「${d}」에 실패했다. ${pick(['의뢰인의 불신이 컸다.','함정에 빠져 퇴각했다.','정보가 잘못되어 있었다.'])}`,'b');roleFx(p,cls,false);
   const sev=ch(.25)?rnd(14,34):rnd(4,13);add(p,'health',-sev);add(p,'happy',-3);if(sev>=14)hosp(p,sev);if(!p.dead&&ch({D:.002,C:.01,B:.03,A:.06,S:.1}[cls]))maim(p,`${cls}급 임무 중`);
  }
- {const PR={D:500,C:1500,B:4500,A:11000,S:28000};const pr=Math.round(PR[cls]*times*(success?1:.25));p.money+=pr;const lg=p.log[p.log.length-1];if(lg&&!p.dead)lg.t+=` (${cls}급 ${times}건, 보수 ${fmtMoney(pr)})`}
+ const mline=p.log[p.log.length-1];
+ {const PR={D:500,C:1500,B:4500,A:11000,S:28000};const pr=Math.round(PR[cls]*times*(success?1:.25));p.money+=pr;const lg=mline;if(lg&&!p.dead)lg.t+=` (${cls}급 ${times}건, 보수 ${fmtMoney(pr)})`}
+ missionAfter(p,cls,d,success,gap,sc,lv);
+ if(p.dead)return;
  if(p.team&&p.team.mates.length&&p.rank===1&&ch(.03+lv*.02)){const m=pick(p.team.mates);if(m.alive){m.alive=false;L(p,`팀원 ${I(m.name)} 임무 중 목숨을 잃었다.`,'b');add(p,'happy',-16);add(p,'bond',-10);p.flags.trauma=(p.flags.trauma||0)+1}}
 }
 function promoTick(p,c){
@@ -1724,10 +1727,10 @@ EV_ROLE.medic.push(
 );
 // ---------- 부상 / 입원 / 불구 / 포로 ----------
 function hosp(p,sev){p.hosp=sev>=26?2:1;p.flags.hospN=(p.flags.hospN||0)+1;L(p,`큰 부상으로 병원에 입원했다. ${sev>=26?'한동안 일어서지도 못했다.':'며칠 동안 침대에 누워 지냈다.'}`,'b')}
-function maim(p,cause){
- const part=pick(['오른팔','왼팔','한쪽 다리','한쪽 눈','청력']);
+function maim(p,cause,part0,txt){
+ const part=part0||pick(['오른팔','왼팔','한쪽 다리','한쪽 눈','청력']);
  p.flags.maimed=part;add(p,'health',-18);sk(p,'tai',-12);sk(p,'nin',-6);add(p,'happy',-14);p.flags.trauma=(p.flags.trauma||0)+1;
- L(p,`${cause} ${part}을 크게 다쳐 이전처럼 싸울 수 없게 되었다.`,'b');
+ L(p,txt||`${cause} ${part}을 크게 다쳐 이전처럼 싸울 수 없게 되었다.`,'b');
  ask(p,{title:'닌자로서의 앞날',body:`${part}의 부상으로 일선에서 싸우는 것은 어려워졌다. 앞으로 어떻게 할까?`,opts:[
   {l:'교관이나 후방 보직으로 남는다',s:'닌자의 이름은 지키되 현장을 떠난다',a:4,f:p=>{p.role='inst';tr(p,'loyal',.5);L(p,'아카데미 교관·후방 보직으로 자리를 옮겼다. 현장에서 멀어졌지만 이마 보호대는 그대로였다.','m')}},
   {l:'닌자를 그만두고 민간인으로 산다',s:'새 직업을 찾아야 한다',a:3,f:p=>{p.prevLabel=RANKS[p.rank];p.track='civ';p.job=pick(['마을 행정 보조(퇴역 닌자)','닌자도구 상점 점원','서당 선생','찻집 주인']);p.jobLv=0;p.role='';add(p,'happy',-2);L(p,`이마 보호대를 반납하고 ${p.job}${'의 길을 시작했다.'}`,'m')}},
@@ -3039,6 +3042,96 @@ autoResolve=function(p,keep){
   applyChoice(p,d,o,false);
  }
 };
+// ================= ENGINE 20: 구미 습격의 밤 (나뭇잎 마을) =================
+const KY_PERM=[
+ {part:'오른팔',t:'오른팔을 잃었다'},{part:'왼팔',t:'왼팔을 잃었다'},{part:'한쪽 다리',t:'한쪽 다리를 크게 다쳐 절게 되었다'},
+ {part:'한쪽 눈',t:'한쪽 눈을 잃었다'},{part:'청력',t:'폭음에 청력을 잃었다'}];
+function kyuDisable(p,ninja,why){
+ // 일시적(뼈 골절) vs 영구
+ if(ch(.5)){
+  const w=pick(['다리가 부러졌다','팔이 부러졌다','갈비뼈가 부러졌다']);
+  add(p,'health',-rnd(10,22));add(p,'happy',-4);hosp(p,24);
+  L(p,`${why} ${w}. 몇 달 동안 제대로 움직이지 못했다.`,'b');
+  if(ninja)sk(p,'tai',-3);
+  return;
+ }
+ const d=pick(KY_PERM);
+ if(ninja&&p.track==='ninja'&&p.rank>=1){maim(p,`구미의 습격 중 ${why.replace(/[.,]$/,'')}`,d.part,`${why} ${d.t}. 이전처럼 싸울 수 없게 되었다.`);return}
+ p.flags.maimed=d.part;add(p,'health',-rnd(16,26));add(p,'happy',-12);p.flags.trauma=(p.flags.trauma||0)+1;
+ L(p,`${why} ${d.t}. 이 몸으로 살아가야 한다.`,'b');
+ if(ninja){sk(p,'tai',-8);sk(p,'nin',-4)}
+ ach(p,'구미의 습격이 남긴 상처');
+}
+function kyuubiNight(p,a,adultNin){
+ const ninjaKid=(p.track==='academy'||(p.track==='ninja'&&p.rank>=1))&&a<16;
+ if(ninjaKid){
+  L(p,'구미가 나타나자 3대 호카게는 16세 미만의 어린 닌자들을 한곳에 모아 안전한 곳으로 대피시키라 명령했다. 멀리서 들리는 굉음과 어른들의 비명 속에서, 아무것도 할 수 없었다.','w');
+  add(p,'happy',-5);
+  if(a>=10){tr(p,'ambit',.3);p.flags.trauma=(p.flags.trauma||0)+(ch(.4)?1:0)}
+  return false;
+ }
+ const fighter=adultNin||(p.track==='ninja'&&p.rank>=1);
+ const sa=skAvg(p);
+ if(fighter){
+  const k=1.25-Math.min(.5,sa/160);
+  let r=R();
+  const lim=[.10*k,.06*k,.04*k,.15];
+  if(r<lim[0]){die(p,'bijuu',pick(['구미의 습격에 맞서 싸우다 목숨을 잃었다.','구미의 꼬리에 휩쓸려 전사했다.','구미의 공격으로 무너진 방어선을 지키다 목숨을 잃었다.']));return true}
+  r-=lim[0];
+  if(r<lim[1]){die(p,'bijuu',pick(['무너진 건물 속에 갇힌 주민들을 끌어내다 다시 무너진 잔해에 깔려 목숨을 잃었다.','동네 주민들을 대피시키다 구미의 공격에 휩쓸려 목숨을 잃었다.','아이를 안고 달리던 주민을 지키려다 목숨을 잃었다.']));return true}
+  r-=lim[1];
+  if(r<lim[2]){die(p,'bijuu','갑자기 무너지는 건물에 깔려 목숨을 잃었다.');return true}
+  r-=lim[2];
+  if(r<lim[3]){kyuDisable(p,true,pick(['무너지는 건물에서 주민을 끌어내다','구미의 꼬리가 스친 여파에','전선에서 동료를 부축해 후퇴하다']));return false}
+  r-=lim[3];
+  if(r<.22){L(p,'무너진 건물 아래 갇힌 주민들을 밤새 끌어냈다. 구해 낸 사람들의 얼굴이 오래 잊히지 않았다.','m');p.fame=(p.fame||0)+1.5;add(p,'bond',4);add(p,'health',-rnd(5,12));add(p,'happy',-4);ach(p,'구미의 밤, 주민을 구하다');return false}
+  L(p,'구미에 맞서 싸웠다. 살아남았지만 몸도 마음도 크게 무너졌다.','b');add(p,'health',-rnd(8,20));add(p,'happy',-10);p.flags.trauma=(p.flags.trauma||0)+1;
+  return false;
+ }
+ // 민간인(어린이 포함)
+ const kid=a<16;
+ let r=R();
+ const pd=a<6?.03:kid?.05:.06;
+ if(r<pd){die(p,'bijuu',pick(kid?['구미의 습격 때 무너진 집에 깔려 목숨을 잃었다.','피난하던 길에서 무너지는 건물에 깔려 세상을 떠났다.']:['무너지는 건물에 깔려 목숨을 잃었다.','구미의 습격 때 불타는 집에서 빠져나오지 못했다.','피난하던 길에서 무너진 잔해에 깔려 목숨을 잃었다.']));return true}
+ r-=pd;
+ if(!kid&&r<.025){die(p,'bijuu',pick(['쓰러진 이웃을 끌어내다 다시 무너진 건물에 깔려 목숨을 잃었다.','이웃의 아이를 대피소로 보내고 자신은 돌아가지 못했다.']));return true}
+ if(!kid)r-=.025;
+ if(r<.09){kyuDisable(p,false,pick(kid?['무너진 집 아래에서','피난하던 중 떨어진 잔해에']:['무너지는 집에서 가족을 끌어내다','피난하던 중 떨어진 잔해에','불타는 가게에서 빠져나오다']));return false}
+ r-=.09;
+ if(!kid&&r<.12){L(p,'동네 주민들을 이끌어 지하 대피소로 데려갔다. 이웃 몇 명이 내 덕분에 목숨을 건졌다.','m');add(p,'bond',4);add(p,'happy',2);p.fame=(p.fame||0)+.5;ach(p,'구미의 밤, 이웃을 지키다');return false}
+ L(p,pick(['지하 대피소에서 밤을 지새웠다. 머리 위로 굉음이 이어졌다.','무너진 집에서 가까스로 빠져나와 대피소로 달렸다.','붉게 물든 하늘을 보며 가족과 함께 피난했다.']),'b');add(p,'happy',-5);
+ return false;
+}
+// ================= ENGINE 21: 임무 위험도 · 부상 · 두려움 =================
+function missionAfter(p,cls,d,success,gap,sc,lv){
+ // 1) 성공했어도 수련 상태가 위험도에 못 미치면 다칠 수 있다
+ if(success){
+  const inj=({D:.04,C:.1,B:.18,A:.28,S:.4})[cls]*cl(Math.exp(gap/25),.3,3.5);
+  if(ch(cl(inj,0,.85))){
+   const sev=cl(rnd(3,12)+Math.max(0,gap)*.6+({D:0,C:2,B:4,A:7,S:10})[cls],3,45);
+   add(p,'health',-sev);add(p,'happy',-2);
+   const what=sev>=26?pick(['깊은 관통상을','독이 퍼지는 중상을','내장까지 번진 타박상을']):sev>=14?pick(['깊은 베인 상처를','골절상을','심한 화상을']):pick(['가벼운 베인 상처를','타박상을','찰과상을']);
+   L(p,`${cls}급 임무「${d}」에서 ${what} 입었다.${gap>12?' 아직 이 등급을 감당하기엔 실력이 모자랐다.':''}`,'b');
+   if(sev>=14)hosp(p,sev);
+   if(!p.dead&&sev>=26&&cls!=='D'&&cls!=='C'&&ch(.05))maim(p,`${cls}급 임무 중 입은 중상으로`);
+  }
+ }
+ // 2) 어린 하급닌자가 너무 어려운 임무를 겪으면 두려움
+ if(p.rank===1&&p.age<=15&&!p.dead&&(gap>=10||cls==='C'&&sc<36)&&p.age-(p.flags.fearAt==null?-9:p.flags.fearAt)>=2&&ch(cl(.28+gap/70,.2,.85))){
+  p.flags.fearAt=p.age;
+  L(p,pick([`${cls}급 임무「${d}」, 어린 몸으로 감당하기엔 너무 벅찼다. 쿠나이를 쥔 손이 멈추지 않고 떨렸다.`,`두려웠다. 처음으로 정말 죽을 수도 있다는 생각이 들었다.`,`${cls}급 임무가 끝난 뒤에도 한참 동안 다리가 후들거렸다. 어린 나이에 감당하기엔 너무 컸다.`]),'b');
+  add(p,'happy',-4);
+  const sn=p.team&&p.team.sensei?p.team.sensei.name:null;
+  if(sn&&ch(.78)){
+   L(p,pick([`담당 상급닌자 ${sn}${jo(sn,'이가').slice(sn.length)} 말없이 옆에 앉아 어깨를 두드렸다. "무서운 건 당연하다. 두려움을 아는 닌자가 오래 산다."`,`담당 상급닌자 ${sn}${jo(sn,'이가').slice(sn.length)} 따뜻한 국물을 건네며 말했다. "오늘은 잘 버텼다. 무서웠다는 걸 숨기지 않아도 돼."`,`담당 상급닌자 ${sn}${jo(sn,'이가').slice(sn.length)} 머리를 헝클어뜨리며 웃었다. "나도 네 나이 때는 똑같았어. 천천히 해도 된다."`]),'g');
+   add(p,'happy',6);add(p,'bond',3);tr(p,'cautious',.3);
+  }else{
+   L(p,'아무에게도 말하지 못하고 혼자 이불 속에서 두려움을 삼켰다.','n');
+   if(ch(.35))p.flags.trauma=(p.flags.trauma||0)+1;
+   tr(p,'loner',.2);
+  }
+ }
+}
 // ================= UI =================
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
