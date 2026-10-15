@@ -947,14 +947,14 @@ const EV_ACAD=[
  {k:'earlygrad',once:true,w:(p,c)=>c.lv>=2&&p.age>=7&&p.age<=10&&p.tal>999?4:0,f:p=>{p.gradAge=p.age;L(p,'천재성을 인정받아 조기 졸업 시험에 나서게 되었다.','m')}}
 ];
 const SHARED_NIN=[
- {k:'frd',w:()=>3,f:p=>{L(p,'동료들과 술자리에서 긴 이야기를 나눴다. 이런 밤이 오래 갔으면 했다.','g');add(p,'happy',4);add(p,'bond',4)}},
+ {k:'frd',w:()=>3,f:p=>{L(p,p.age<18?'동료들과 모여 앉아 밤늦도록 긴 이야기를 나눴다. 이런 밤이 오래 갔으면 했다.':'동료들과 술자리에서 긴 이야기를 나눴다. 이런 밤이 오래 갔으면 했다.','g');add(p,'happy',4);add(p,'bond',4)}},
  {k:'wound',w:p=>p.rank>=1?3:0,f:p=>{add(p,'health',-rnd(5,14));L(p,'임무 중 큰 상처를 입고 병원 신세를 졌다.','b')}},
  {k:'kill',w:(p,c)=>p.rank>=1&&p.kills<1&&!['medic','sensor','inst','sealer'].includes(p.role)?3:0,f:p=>{p.kills=1;L(p,'처음으로 사람을 죽였다. 손이 떨렸다. 동료가 말없이 어깨를 두드렸다.','b');add(p,'happy',-12);p.flags.trauma=(p.flags.trauma||0)+1}},
  {k:'mentor',once:true,w:p=>p.age>=18?3:0,f:p=>{L(p,'경험 많은 선배에게서 오래 가르침을 받았다. 전술 하나가 귀에 박혔다.','g');sk(p,'nin',4);sk(p,'tai',2);add(p,'know',3)}},
  {k:'training',w:()=>4,f:p=>{const k=pick(['tai','nin','gen']);sk(p,k,5);L(p,`${{tai:'체술',nin:'인술',gen:'환술'}[k]} 수련에 몰두했다. 한계를 한 번 넘는 감각이 있었다.`,'g')}},
  {k:'travel',w:()=>2,f:p=>{L(p,pick(['휴가로 온천 마을에 들렀다. 몇 년 만에 단잠을 잤다.','먼 마을의 시장을 구경했다. 낯선 음식이 입에 맞았다.']),'g');add(p,'happy',6)}},
- {k:'ghost',w:(p)=>p.flags.trauma>=2?3:0,f:p=>{add(p,'happy',-5);L(p,'밤마다 전장의 환영이 따라다녔다. 술이 늘었다.','b')}},
- {k:'cameo_jiraiya',once:true,w:(p,c)=>c.y>=-25&&c.y<=15&&p.rank>=1&&NID_GREAT.includes(p.nid)?1.2:0,f:p=>{L(p,'여행 중 허름한 주점에서 수첩에 무언가를 적는 하얀 머리의 남자를 만났다. 그는 "지라이야"라고만 밝히고 술값을 대신 내주었다.','m');add(p,'happy',2)}},
+ {k:'ghost',w:(p)=>p.flags.trauma>=2?3:0,f:p=>{add(p,'happy',-5);L(p,p.age<18?'밤마다 전장의 환영이 따라다녔다. 잠들지 못한 새벽이면 수련장에서 몸을 굴렸다.':'밤마다 전장의 환영이 따라다녔다. 술이 늘었다.','b')}},
+ {k:'cameo_jiraiya',once:true,w:(p,c)=>c.y>=-25&&c.y<=15&&p.rank>=1&&NID_GREAT.includes(p.nid)?1.2:0,f:p=>{L(p,`여행 중 허름한 ${p.age<18?'찻집':'주점'}에서 수첩에 무언가를 적는 하얀 머리의 남자를 만났다. 그는 "지라이야"라고만 밝히고 ${p.age<18?'찻값':'술값'}을 대신 내주었다.`,'m');add(p,'happy',2)}},
  {k:'cameo_tsunade',once:true,w:(p,c)=>c.y>=-25&&c.y<=12&&p.age>=20?1:0,f:p=>{L(p,'도박장에서 금발의 여인이 연달아 돈을 잃고도 호쾌하게 웃고 있었다. 훗날 그 이름이 "전설의 삼닌" 중 하나라는 것을 알게 되었다.','m')}},
  {k:'orochi',once:true,w:(p,c)=>c.y>=-10&&c.y<=14&&p.rank>=2&&p.sk.nin>40?1.2:0,f:p=>{L(p,'뱀 같은 눈을 한 남자가 은밀히 접촉해 왔다. "힘이 필요하지 않나"라는 말이 한참 귀에 남았다.','w');p.flags.orochiHint=true}},
  {k:'cameo_hiruzen',once:true,w:(p,c)=>p.nid==='fire'&&c.y>=-30&&c.y<=11&&p.rank>=1?1.5:0,f:p=>{L(p,'호카게 집무실에서 3대 호카게 히루젠이 직접 임무를 설명했다. 파이프 연기 너머로 "불의 의지"를 이야기했다.','m');add(p,'happy',3)}},
@@ -1066,7 +1066,7 @@ const EV_CIV=[
  {k:'apprentice',w:p=>p.jobLv>=2?3:0,f:p=>{L(p,'견습생을 받아 가르쳤다. 어깨너머로 보던 내 모습이 겹쳐 보였다.','g');add(p,'happy',3)}},
  {k:'festival',w:()=>3,f:p=>{L(p,'마을 축제에서 단골들과 어울려 밤새 웃었다.','g');add(p,'happy',5);add(p,'bond',3)}},
  {k:'gamble',w:p=>p.st.happy<40?3:.8,f:p=>{p.money-=rnd(8000,50000);L(p,'도박장 문을 드나들다 빚이 쌓였다. 아는 사람의 한마디가 겨우 발길을 돌렸다.','b');add(p,'happy',-6)}},
- {k:'drink',w:p=>p.st.happy<38?3:.6,f:p=>{add(p,'health',-5);L(p,'술이 늘었다. 아침마다 머리가 무거웠다.','b')}},
+ {k:'drink',w:p=>p.st.happy<38?3:.6,f:p=>{if(p.age<18){add(p,'health',-1);sk(p,'tai',2);L(p,'마음이 가라앉지 않는 날이 이어졌다. 새벽마다 수련장에서 땀을 흘리며 버텼다.','n');return}add(p,'health',-5);L(p,'술이 늘었다. 아침마다 머리가 무거웠다.','b')}},
  {k:'tax',w:()=>2,f:p=>{p.money-=rnd(3000,18000);L(p,'영주의 세금이 올랐다. 푸념하는 사람들이 가게를 채웠다.','n')}},
  {k:'sage',w:()=>1,f:p=>{L(p,'이상한 소문이 돌았다. 어느 닌자가 용지동굴에서 돌아오지 않았다고 했다.','n')}}
 ];
@@ -1360,7 +1360,7 @@ anbu:[
  {k:'a2',w:()=>3,f:p=>{L(p,'일족의 동향을 몇 달 동안 감시했다. 평범한 이웃들의 일상을 모조리 기록했다.','n');add(p,'bond',-3)}},
  {k:'a3',w:()=>3,f:p=>{L(p,'가면 아래서 표정이 사라지는 것을 느꼈다. 거울을 보다 낯선 얼굴이라 생각했다.','b');add(p,'happy',-6)}},
  {k:'a4',w:()=>3,f:p=>{L(p,'비밀 임무가 끝난 뒤 목격자에게 입막음을 해야 했다. 명령은 명령이었다.','b');add(p,'happy',-9);p.kills+=1}},
- {k:'a5',w:()=>2,f:p=>{L(p,'동료 암부와 술잔을 앞에 두고 한 시간 동안 아무 말도 하지 않았다. 그게 위로였다.','n');add(p,'bond',2)}},
+ {k:'a5',w:()=>2,f:p=>{L(p,p.age<18?'동료 암부와 찻잔을 앞에 두고 한 시간 동안 아무 말도 하지 않았다. 그게 위로였다.':'동료 암부와 술잔을 앞에 두고 한 시간 동안 아무 말도 하지 않았다. 그게 위로였다.','n');add(p,'bond',2)}},
  {k:'a6',w:()=>2,f:p=>{L(p,`${ldr(p)}의 호위를 맡았다. 그림자처럼 따라다니며 한 번도 모습을 드러내지 않았다.`,'m');p.fame=(p.fame||0)+1}},
  {k:'a7',once:true,w:p=>p.flags.dark>=4?3:0,f:p=>{
    ask(p,{title:'양심의 갈림길',body:'최근 임무의 대상은 마을에 해를 끼친 적이 없는 사람들이었다. 명령의 이유를 묻는 것은 금지되어 있다.',opts:[
@@ -1479,7 +1479,7 @@ LATER.genback=(p,d)=>{
 LATER.tortureEcho=(p)=>{
  ask(p,{title:'고문의 후유증',body:'심문실 문손잡이를 잡을 때마다 손이 굳는다. 포로의 비명이 잠을 방해한다.',opts:[
   {l:'상담을 받는다',s:'의료닌자·상담역에게 속을 털어놓는다',a:4,f:p=>{p.tr.cold=Math.max(0,(p.tr.cold||0)-1);add(p,'happy',6);add(p,'bond',3);tr(p,'guilt',-1);L(p,'상담역에게 처음으로 속을 털어놓았다. 이야기를 하는 것만으로 숨통이 트였다.','m')}},
-  {l:'술로 버틴다',s:'',a:3,f:p=>{add(p,'health',-6);add(p,'happy',-3);tr(p,'guilt');p.flags.drink=true;L(p,'술로 하루하루를 버텼다. 아침마다 머리가 무거웠다.','b')}},
+  ...(p.age<18?minorCope():[{l:'술로 버틴다',s:'',a:3,f:p=>{add(p,'health',-6);add(p,'happy',-3);tr(p,'guilt');p.flags.drink=true;L(p,'술로 하루하루를 버텼다. 아침마다 머리가 무거웠다.','b')}}]),
   {l:'더 단단해지려 한다',s:'감정을 무뎌지게 만든다',a:2,f:p=>{tr(p,'cold',1.5);tr(p,'feared');add(p,'bond',-5);add(p,'happy',-2);L(p,'감정을 눌러 담는 법을 익혔다. 이제 비명도 잘 들리지 않는다.','b')}}
  ]});
 };
@@ -1678,9 +1678,9 @@ const EV_MONEY=[
  {k:'donate',w:p=>p.money>=120000?2:0,f:p=>{
   ask(p,{title:'넉넉해진 형편',body:'생활에 여유가 생겼다. 이 돈을 어디에 쓸까?',opts:[
    {l:'고아원과 위령비에 기부한다 (30,000료)',s:'전쟁고아를 떠올린다',a:3,f:p=>{spend(p,30000);add(p,'happy',6);add(p,'bond',4);tr(p,'generous');tr(p,'kind',.5);L(p,'고아원과 위령비에 큰 돈을 기부했다. 아이들의 얼굴이 오래 남았다.','m')}},
-   {l:'사치를 누린다 (30,000료)',s:'좋은 옷, 좋은 술, 좋은 방',a:3,f:p=>{spend(p,30000);add(p,'happy',5);tr(p,'greedy',.5);L(p,'비싼 옷과 술에 돈을 썼다. 순간은 즐거웠다.','g')}},
+   {l:'사치를 누린다 (30,000료)',s:p.age<18?'좋은 옷, 맛있는 음식, 좋은 방':'좋은 옷, 좋은 술, 좋은 방',a:3,f:p=>{spend(p,30000);add(p,'happy',5);tr(p,'greedy',.5);L(p,p.age<18?'비싼 옷과 맛있는 음식에 돈을 썼다. 순간은 즐거웠다.':'비싼 옷과 술에 돈을 썼다. 순간은 즐거웠다.','g')}},
    {l:'모아 둔다',s:'',a:4,f:p=>{tr(p,'thrifty');L(p,'쓰지 않고 모으기로 했다.','n')}}]})}},
- {k:'drinkcost',w:p=>p.flags.drink||p.st.happy<35?3:.4,f:p=>{spend(p,rnd(3000,12000));add(p,'health',-3);L(p,'술값과 도박 빚으로 한 해 지갑이 줄줄 샜다.','b')}},
+ {k:'drinkcost',w:p=>p.age<18?0:p.flags.drink||p.st.happy<35?3:.4,f:p=>{spend(p,rnd(3000,12000));add(p,'health',-3);L(p,'술값과 도박 빚으로 한 해 지갑이 줄줄 샜다.','b')}},
  {k:'medbill',w:p=>p.st.health<55?3:.5,f:p=>{spend(p,rnd(3000,15000));L(p,'병원비와 약값이 만만치 않게 나갔다.','b')}},
  {k:'travelx',w:p=>canPay(p,15000)&&p.track!=='rogue'?2:0,f:p=>{spend(p,10000);add(p,'happy',6);L(p,'큰맘 먹고 온천 마을로 긴 여행을 다녀왔다. 다음 해 살림이 팍팍했지만 후회는 없었다.','g')}},
  {k:'gift',w:p=>p.love&&canPay(p,5000)?3:0,f:p=>{spend(p,6000);p.love.score=cl(p.love.score+7);L(p,`${p.love.name}에게 좋은 선물을 샀다.`,'g')}},
@@ -1824,8 +1824,8 @@ function travelAsk(p){
  ask(p,{title:rg?'낯선 마을의 밤':'여행 중의 밤',body:`${spots}에 닿았다. 해가 저물고 있다. 오늘 밤 어디서 묵을까?${rg?' (신분이 드러나지 않도록 조심해야 한다.)':''}`,opts:[
   {l:'고급 여관 (12,000료)',s:rg?'편하지만 숙박부에 이름이 남는다':'푹 쉴 수 있고 이야기를 많이 듣는다',a:2,f:p=>{spend(p,12000);add(p,'happy',6);add(p,'health',4);if(rg){if(ch(.3)){L(p,'고급 여관의 숙박부에 가명을 적었지만 직원의 눈빛이 이상했다. 새벽에 서둘러 떠났다.','b');p.bounty=(p.bounty||0)+50000}else L(p,'오랜만에 이불에서 잠을 잤다. 아침에 온몸이 가벼웠다.','g')}else{L(p,`${N.name}의 고급 여관에서 푹 쉬었다. 주인이 그 지방 소문을 한참 들려주었다.`,'g');add(p,'know',2)}}},
   {l:'평범한 여관 (4,000료)',s:'무난하다',a:5,f:p=>{spend(p,4000);add(p,'happy',2);L(p,`${N.name}의 평범한 여관에서 하룻밤을 묵었다. 옆방 상인과 짧은 이야기를 나눴다.`,'n')}},
-  {l:'야영한다 (500료)',s:'싸지만 몸이 고되고 위험하다',a:2,f:p=>{spend(p,500);add(p,'health',-3);if(ch(.12)){spend(p,rnd(2000,6000));L(p,'야영하던 밤 도둑이 짐을 뒤졌다. 돈이 사라졌다.','b')}else{tr(p,'thrifty',.5);L(p,'들판에서 별을 보며 밤을 지새웠다. 불침번 서는 동안 이런저런 생각이 오갔다.','n')}}},
-  {l:'현지인의 집에 신세를 진다',s:'인연이 생기지만 낯선 사람을 믿어야 한다',a:2,f:p=>{tr(p,'kind',.3);if(ch(.15)){L(p,'친절한 척하던 집주인이 새벽에 짐을 훔쳐 달아났다.','b');spend(p,rnd(1000,5000))}else{L(p,`${N.name}의 가난한 노부부 집에서 하룻밤 신세를 졌다. 따뜻한 국물과 옛이야기를 얻었다.`,'m');add(p,'bond',3);add(p,'happy',4);add(p,'know',2)}}}
+  {l:'야영한다 (무료)',s:'돈은 들지 않지만 몸이 고되고 위험하다',a:2,f:p=>{add(p,'health',-3);if(ch(.12)){spend(p,rnd(2000,6000));L(p,'야영하던 밤 도둑이 짐을 뒤졌다. 돈이 사라졌다.','b')}else{tr(p,'thrifty',.5);L(p,'들판에서 별을 보며 밤을 지새웠다. 불침번 서는 동안 이런저런 생각이 오갔다.','n')}}},
+  {l:'현지인의 집에 신세를 진다 (500료)',s:'숙박비 조로 얼마간 건네야 한다. 인연이 생기지만 낯선 사람을 믿어야 한다',a:2,f:p=>{spend(p,500);tr(p,'kind',.3);if(ch(.15)){L(p,'친절한 척하던 집주인이 새벽에 짐을 훔쳐 달아났다.','b');spend(p,rnd(1000,5000))}else{L(p,`${N.name}의 가난한 노부부 집에서 하룻밤 신세를 졌다. 따뜻한 국물과 옛이야기를 얻었다.`,'m');add(p,'bond',3);add(p,'happy',4);add(p,'know',2)}}}
  ]});
  if(!rg){
   const items=SPEC[nid]||['지역 특산품'];const it=pick(items);
@@ -1997,7 +1997,7 @@ const EV_BANDIT=[
  {k:'b6',w:p=>p.age>=16?2:0,f:p=>{ask(p,{title:'칼을 내려놓을까',body:'마을을 습격할 때마다 우는 아이들이 떠오른다. 이 길에서 벗어나고 싶은 마음이 든다.',opts:[
    {l:'도적단을 떠난다',s:'배신자로 쫓길 수 있다',a:3,f:p=>{p.flags.bandit=false;p.track='civ';p.job=pick(['농부','목수','어부','건축 인부']);p.jobLv=0;tr(p,'guilt');tr(p,'kind',.5);add(p,'happy',6);L(p,'밤에 몰래 도적단을 떠났다. 먼 마을에서 일꾼으로 새 삶을 시작했다.','m')}},
    {l:'계속 남는다',s:'',a:4,f:p=>{tr(p,'cold',.5);L(p,'마음을 눌러 담고 도적단에 남았다.','n')}}]})}},
- {k:'b7',w:()=>2,f:p=>{add(p,'happy',-2);L(p,'모닥불 곁에서 도적들과 술을 나눴다. 이 사람들만이 내 가족이었다.','n');add(p,'bond',3)}}
+ {k:'b7',w:()=>2,f:p=>{add(p,'happy',-2);L(p,p.age<18?'모닥불 곁에서 도적들과 구운 고기를 나눠 먹었다. 이 사람들만이 내 가족이었다.':'모닥불 곁에서 도적들과 술을 나눴다. 이 사람들만이 내 가족이었다.','n');add(p,'bond',3)}}
 ];
 const EV_GRUDGE=[
  {k:'g1',w:p=>p.age<=18?3:1,f:p=>{sk(p,'tai',3);add(p,'happy',-3);tr(p,'revenge',.5);L(p,'원수의 얼굴을 떠올리며 홀로 수련했다. 주먹에서 피가 났다.','n')}},
@@ -2057,7 +2057,7 @@ function deprAsk(p){
     if(bond>=45&&p.track!=='rogue'){dep(p,-26);add(p,'bond',5);add(p,'happy',8);tr(p,'trust',.0);L(p,'용기를 내 속마음을 털어놓았다. 상대는 말없이 한참을 들어 주었다. 처음으로 숨이 쉬어졌다.','m')}
     else{dep(p,-5);add(p,'happy',-3);L(p,'털어놓을 사람이 마땅치 않았다. 입을 열었다가 다시 닫았다.','b')}}},
   {l:'상담을 받는다 (6,000료)',s:'의료닌자나 마을 상담사를 찾아간다',a:p.track==='rogue'?0:3,f:p=>{spend(p,6000);dep(p,-34);add(p,'happy',7);tr(p,'cautious',.3);L(p,'마을의 상담사를 찾아갔다. 몇 달에 걸친 대화 끝에 마음의 매듭이 조금씩 풀렸다.','m');ach(p,'마음을 돌보다')}},
-  {l:'술로 버틴다',s:'잠시 잊히지만 몸이 상한다',a:3,f:p=>{p.flags.drink=true;dep(p,-6);add(p,'health',-6);add(p,'bond',-3);L(p,'술로 하루하루를 버텼다. 아침마다 머리가 무거웠다.','b');later(p,rnd(2,4),'drinkWorse')}},
+  ...(p.age<18?minorCope():[{l:'술로 버틴다',s:'잠시 잊히지만 몸이 상한다',a:3,f:p=>{p.flags.drink=true;dep(p,-6);add(p,'health',-6);add(p,'bond',-3);L(p,'술로 하루하루를 버텼다. 아침마다 머리가 무거웠다.','b');later(p,rnd(2,4),'drinkWorse')}}]),
   {l:'일에 몰두한다',s:'바쁘면 잊힌다. 하지만 쉬지 못한다',a:3,f:p=>{p.flags.workaholic=true;dep(p,-10);add(p,'health',-4);add(p,'bond',-4);p.money+=rnd(3000,12000);L(p,'모든 시간을 일에 쏟았다. 바쁠수록 생각이 덜 났다. 가족은 점점 얼굴 보기가 어려워졌다.','n')}},
   {l:'모든 것을 내려놓고 칩거한다',s:'일을 쉬며 아무도 만나지 않는다',a:2,f:p=>{p.flags.deprOn=true;p.rest=rnd(1,3);add(p,'bond',-6);L(p,'일을 내려놓고 집 안에 틀어박혔다. 커튼은 며칠째 걷히지 않았다.','b')}}
  ]});
@@ -2237,6 +2237,11 @@ function marriageTick(p,c){
 // 닌자 테스트용: 입학 자동
 const _enrollAsk=enrollAsk;
 enrollAsk=function(p){_enrollAsk(p);if(p.flags.anbuTest&&p.q.length){const d=p.q.pop();d.opts[0].f(p)}};
+
+function minorCope(){return [
+ {l:'수련에 매진한다',s:'몸을 움직이며 잡념을 떨친다. 무리하면 몸이 상한다',a:3,f:p=>{sk(p,pick(['tai','nin']),3);dep(p,-6);add(p,'health',-2);add(p,'bond',-1);L(p,'아무 생각도 나지 않을 때까지 수련장에서 몸을 굴렸다. 땀에 젖어 돌아오는 길, 마음이 조금 가벼웠다.','g')}},
+ {l:'책을 읽으며 마음을 달랜다',s:'조용히 마음을 가라앉힌다',a:3,f:p=>{add(p,'know',2);dep(p,-6);add(p,'happy',1);L(p,'밤마다 책과 두루마리를 펼쳤다. 글자를 따라가는 동안 생각이 조금 멀어졌다.','g')}}
+]}
 // ================= ENGINE 12: focus effects, fatigue, comrade consequences, disappearance =================
 // ---- 올해의 초점: 눈에 보이는 효과 ----
 const FOCI_D={
@@ -2437,7 +2442,7 @@ Object.assign(JOBS,{'떠돌이 행상인':1.2,'약장수':1.3,'인형극단 단�
 if(typeof NATIONS!=='undefined'){['wind','tea','hotspring'].forEach(k=>{if(NATIONS[k]&&NATIONS[k].jobs){NATIONS[k].jobs.push('인형극단 단원')}});if(NATIONS.fire&&NATIONS.fire.jobs){NATIONS.fire.jobs.push('가부키 배우','닌자 활극 극단 배우')}}
 const PERF=['떠돌이 행상인','약장수','인형극단 단원','가부키 배우','샤미센 악사','곡예사','이야기꾼(만담가)','무희','유랑 서커스 단원','닌자 활극 극단 배우','극단 배우'];
 EV_CIV.push(
- {k:'perf1',w:p=>PERF.includes(p.job)?4:0,f:p=>{L(p,pick(['여러 나라를 돌며 공연을 올렸다. 닌자 마을에서는 박수가 더 크고, 국경 마을에서는 술값이 더 후했다.','닌자 활극을 올린 날, 객석 맨 앞의 닌자 아이들이 눈을 반짝였다. 진짜 닌자가 보는 줄 알고 식은땀이 났다.','국경을 넘는 길에 검문을 받았다. 광대의 짐 속 소품 쿠나이를 보고 닌자들이 한참 웃었다.','마을 광장에서 즉흥 공연을 했다. 아이들이 줄줄이 따라왔다.']),'g');p.money+=rnd(3000,18000);add(p,'happy',3)}},
+ {k:'perf1',w:p=>PERF.includes(p.job)?4:0,f:p=>{L(p,pick(['여러 나라를 돌며 공연을 올렸다. 닌자 마을에서는 박수가 더 크고, 국경 마을에서는 팁이 더 후했다.','닌자 활극을 올린 날, 객석 맨 앞의 닌자 아이들이 눈을 반짝였다. 진짜 닌자가 보는 줄 알고 식은땀이 났다.','국경을 넘는 길에 검문을 받았다. 광대의 짐 속 소품 쿠나이를 보고 닌자들이 한참 웃었다.','마을 광장에서 즉흥 공연을 했다. 아이들이 줄줄이 따라왔다.']),'g');p.money+=rnd(3000,18000);add(p,'happy',3)}},
  {k:'perf2',w:p=>PERF.includes(p.job)&&NN(p).hid?1.5:0,f:p=>{L(p,pick(['공연 도중 객석에서 누가 쿠나이를 던지는 시늉을 해서 소동이 났다. 알고 보니 비번 닌자의 장난이었다.','극단 숙소에서 정체 모를 닌자들이 밤새 우리 짐을 뒤져 갔다. 아침엔 아무것도 없어지지 않았다.']),'n')}},
  {k:'peddle',w:p=>(p.job==='떠돌이 행상인'||p.job==='약장수')?3:0,f:p=>{L(p,pick(['외딴 산마을에 소금과 바늘을 팔았다. 노인이 오래 기다린 얼굴로 맞아 주었다.','국경 검문소에서 닌자들이 짐을 샅샅이 뒤졌다. 약초 몇 포가 압수되었다.','약장수 입담에 속아 약을 산 손님이 항의했다. 곧 사과하고 값을 돌려줬다.']),'n')}}
 );
@@ -2449,7 +2454,7 @@ EV_CIV.push(
   ask(p,{title:'넉넉해진 형편',body:'생활에 여유가 생겼다. 이 돈을 어디에 쓸까?',opts:[
    {l:'고아원에 기부한다 (30,000료)',s:'전쟁고아와 버려진 아이들에게 간다',a:3,f:p=>{spend(p,30000);add(p,'happy',5);add(p,'bond',3);tr(p,'generous');tr(p,'kind',.5);p.flags.donOrph=(p.flags.donOrph||0)+1;L(p,'고아원에 큰 돈을 기부했다. 아이들이 줄지어 서서 고개를 숙였다.','m');later(p,rnd(3,8),'orphThanks',{n:p.flags.donOrph})}},
    {l:'의료시설에 기부한다 (30,000료)',s:'병원과 의료 닌자 교육에 쓰인다',a:3,f:p=>{spend(p,30000);add(p,'happy',4);tr(p,'generous',.6);p.flags.donMed=(p.flags.donMed||0)+1;L(p,'마을 의료시설에 큰 돈을 기부했다. 병원장이 직접 나와 감사 인사를 했다.','m');later(p,rnd(2,5),'medUp',{n:p.flags.donMed})}},
-   {l:'사치를 누린다 (30,000료)',s:'좋은 옷, 좋은 술, 좋은 방',a:3,f:p=>{spend(p,30000);add(p,'happy',5);tr(p,'greedy',.5);L(p,'비싼 옷과 술에 돈을 썼다. 순간은 즐거웠다.','g')}},
+   {l:'사치를 누린다 (30,000료)',s:p.age<18?'좋은 옷, 맛있는 음식, 좋은 방':'좋은 옷, 좋은 술, 좋은 방',a:3,f:p=>{spend(p,30000);add(p,'happy',5);tr(p,'greedy',.5);L(p,p.age<18?'비싼 옷과 맛있는 음식에 돈을 썼다. 순간은 즐거웠다.':'비싼 옷과 술에 돈을 썼다. 순간은 즐거웠다.','g')}},
    {l:'모아 둔다',s:'',a:4,f:p=>{tr(p,'thrifty');L(p,'쓰지 않고 모으기로 했다.','n')}}]})};
 }
 LATER.orphThanks=(p,d)=>{
@@ -2534,7 +2539,7 @@ const EV_FEST=[
  FEST('water1',(p,y)=>p.nid==='water','안개 속에 수백 개의 등불이 떠올랐다. 안개 마을의 등불제였다. 서로 말없이 웃으며 한 해의 무사를 빌었다.',p=>{add(p,'happy',3);add(p,'bond',2)},'g',2),
  FEST('light1',(p,y)=>p.nid==='lightning','구름 마을의 폭우가 그친 뒤 열린 큰 축제. 북소리가 천둥처럼 울렸고, 힘센 사내들이 바위를 들어 올리는 시합을 벌였다.',p=>{add(p,'happy',4)},'g',2),
  FEST('earth1',(p,y)=>p.nid==='earth','바위 마을의 돌 조각 축제가 열렸다. 장인들이 솜씨를 겨루고 아이들은 작은 돌탑을 쌓았다.',p=>add(p,'happy',3),'g',2),
- FEST('harvest',(p,y)=>NN(p).type!=='none'&&p.place!=='village'||p.place==='rural','가을 수확제가 열렸다. 새 곡식으로 지은 밥과 술이 돌고, 마을 사람들이 밤새 노래했다.',p=>{add(p,'happy',4);add(p,'bond',3)},'g',2),
+ FEST('harvest',(p,y)=>NN(p).type!=='none'&&p.place!=='village'||p.place==='rural','가을 수확제가 열렸다. 새 곡식으로 지은 밥과 떡이 돌고, 마을 사람들이 밤새 노래했다.',p=>{add(p,'happy',4);add(p,'bond',3)},'g',2),
  FEST('newyear',(p,y)=>true,'새해 첫날, 한 해의 소원을 빌었다. 소원은 비밀로 했다.',p=>add(p,'happy',2),'g',2),
  FEST('mem',(p,y,c)=>c.lv>=1&&NN(p).hid,'위령제가 열렸다. 전쟁에서 목숨을 잃은 이들을 기리는 등불이 줄지어 떠올랐다. 이름 하나하나가 낭독될 때마다 조용한 흐느낌이 번졌다.',p=>{add(p,'happy',-2);add(p,'bond',3)},'n',2),
  FEST('nin',(p,y)=>NN(p).hid&&p.place==='village','닌자 마을의 큰 축제. 닌자들의 시범 공연과 분신술 쇼가 펼쳐졌고, 아이들이 쿠나이 던지기 노점에서 줄을 섰다.',p=>{add(p,'happy',4);if(isNin(p))add(p,'bond',2)},'g',2.5),
@@ -2994,6 +2999,46 @@ stepYear=function(p,...r){
 // 남겨 둔 배우자가 있으면 새 아이 계획/제안 이벤트 없음
 EV_ANY.forEach(e=>{if(e.k==='kidplan'){const w=e.w;e.w=(p,c)=>(p.fam.spouse&&p.fam.spouse.left)?0:w(p,c)}});
 {const _fc=LATER.firstChild;LATER.firstChild=function(p){if(p.fam.spouse&&p.fam.spouse.left)return;return _fc(p)}}
+// ================= ENGINE 19: 사건 순서대로 선택지 (선택 결과를 사건 줄 바로 뒤에 삽입) =================
+let RES19=null;var LOGHOOK=null;
+const _ask19=ask;
+ask=function(p,o){
+ _ask19(p,o);
+ const len=p.log.length;
+ o.at=(RES19&&RES19.p===p)?RES19.base+(len-RES19.n0):len;
+};
+function applyChoice(p,d,o,rec){
+ const base=Math.min(d.at==null?p.log.length:d.at,p.log.length),n0=p.log.length;
+ const prevQ=p.q.slice();
+ const prev=RES19;RES19={p,base,n0};
+ try{
+  if(o){
+   p.ch.push({a:p.age,t:d.title,c:o.l});
+   if(rec){p.mem=p.mem||{};p.mem[d.title]=o.l}
+   if(o.f)o.f(p);
+  }
+ }finally{RES19=prev}
+ const k=p.log.length-n0;
+ if(k>0&&base<n0){
+  const added=p.log.splice(n0,k);
+  p.log.splice(base,0,...added);
+  prevQ.forEach(x=>{if(x.at!=null&&x.at>=base)x.at+=k});
+  if(p.msnap&&p.msnap.nlog!=null&&base<=p.msnap.nlog)p.msnap.nlog+=k;
+  if(LOGHOOK)LOGHOOK(p,base,k);
+  if(p.dead)p.log.length=base+k; // 사망하면 그 뒤에 계산돼 있던 같은 해 사건은 버린다
+ }
+ p.q.sort((a,b)=>(a.at||0)-(b.at||0));
+}
+resolveDecision=function(p,d,idx){const o=d.opts[idx];if(o)applyChoice(p,d,o,true)};
+autoResolve=function(p,keep){
+ let n=0;
+ while(p.q.length&&!p.dead&&n++<10){
+  if(keep&&p.q[0].anim)break;
+  const d=p.q.shift();
+  const o=wp(d.opts,o=>(o.a==null?1:o.a))||d.opts[0];
+  applyChoice(p,d,o,false);
+ }
+};
 // ================= UI =================
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -3111,6 +3156,7 @@ function advance(){
 function revealStep(){
  clearTimeout(S.timer);const p=S.p;
  if(S.paused||S.modal)return;
+ if(p.q.length&&p.q[0].at!=null&&p.q[0].at<=S.vis&&!p.dead){showDecision();return}
  if(S.vis<p.log.length){S.vis++;renderLife();S.timer=setTimeout(revealStep,S.evMs);return}
  S.busy=false;renderLife();
  if(p.dead){finish();return}
@@ -3125,8 +3171,9 @@ function afterChoose(p){
  if(p.dead){closeSheet(true);finish();return}
  if(S.auto)autoResolve(p,true);
  if(p.dead){closeSheet(true);finish();return}
- if(p.q.length)showDecision();else closeSheet();
+ if(p.q.length&&!S.busy)showDecision();else closeSheet();
 }
+LOGHOOK=(p,pos,k)=>{if(S.p===p&&S.vis>pos)S.vis+=k};
 const ELORDER=['fire','wind','water','earth','lightning'];
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 function paperFx(n,box){
@@ -3170,6 +3217,7 @@ function sameAns(p){
 function showDecision(){
  const p=S.p;
  if(sameAns(p)){if(p.dead){closeSheet(true);finish();return}if(!p.q.length){closeSheet();return}}
+ if(S.busy&&p.q[0].at!=null&&p.q[0].at>S.vis){closeSheet();return}
  const d=p.q[0];
  if(d.anim==='paper'){paperAnim(p,d);return}
  openSheet(`<button class="chip sm peekb" id="peek">잠시 내려서 상황 보기</button><h2 class="disp">${esc(d.title)}</h2><p class="b">${esc(d.body)}</p>${d.opts.map((o,i)=>`<button class="opt" data-i="${i}"><b>${esc(o.l)}</b>${o.s?`<span>${esc(o.s)}</span>`:''}</button>`).join('')}`);
