@@ -97,7 +97,7 @@ dl.kv dt{color:var(--mute)}dl.kv dd{margin:0}
 #sheet p.b{margin:0 0 14px;color:#2c3445}
 .opt{display:block;width:100%;text-align:left;padding:13px 14px;border:1px solid var(--line);border-radius:10px;background:#fff;margin-top:9px}
 .opt b{display:block;font-size:16px}.opt span{font-size:13px;color:var(--mute)}
-.opt:active{background:var(--ac2)}
+.opt:active{background:var(--ac2)}.opt.dis{opacity:.42;background:#f1efea;cursor:not-allowed}.opt.dis:active{background:#f1efea}
 .tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
 textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit;min-height:70px;background:#fff}
 .nrow{display:flex;gap:10px;padding:9px 0;border-top:1px solid var(--line)}
@@ -587,19 +587,19 @@ function familyTick(p,c){
   if(ch(parentHaz(q,c.lv,p))){
    q.dead=true;q.deadAge=p.age;
    const war=c.lv>=1.2&&q.ninja&&ch(.65);
-   q.dcause=war?'전쟁/임무 중 사망':(q.age>60?'노환':'병 또는 사고');
+   const cv=war?'':civDeath(q,c,q.ninja);q.dcause=war?'전쟁/임무 중 사망':cv.replace(/\.$/,'');
    const who=q.rel;
-   if(p.age<=15){L(p,`${who}(${q.name})${war?'가 전장에서 돌아오지 못했다.':'가 세상을 떠났다.'}`,'b');add(p,'happy',-18);add(p,'bond',-14);p.flags.trauma=(p.flags.trauma||0)+1;
+   if(p.age<=15){L(p,`${who}(${q.name})${war?'가 전장에서 돌아오지 못했다.':'가 '+cv}`,'b');add(p,'happy',-18);add(p,'bond',-14);p.flags.trauma=(p.flags.trauma||0)+1;
     if(war&&ch(.6))later(p,1,'grudgeReveal',{});
     if(F.parents.every(x=>x.dead||x.unk)){p.orphaned=true;orphanAsk(p)}else{p.famMoney*=.7;p.cls=Math.max(1,p.cls-1);L(p,'홀로 남은 부모가 일을 두 배로 하며 집안을 지탱했다. 식탁이 한결 조용해졌다.','n')}
    }else if(p.track==='rogue'||p.flags.hidden){L(p,`풍문으로 ${who}(${q.name})의 부고를 들었다. 장례에도 갈 수 없었다.`,'b');add(p,'happy',-10)}
-   else{L(p,`${who}(${q.name})${war?'가 임무 중 목숨을 잃었다.':'가 세상을 떠났다.'}`,'b');add(p,'happy',-12);add(p,'bond',-6);p.money+=Math.round(p.famMoney*.1)}
+   else{L(p,`${who}(${q.name})${war?'가 임무 중 목숨을 잃었다.':'가 '+cv}`,'b');add(p,'happy',-12);add(p,'bond',-6);p.money+=Math.round(p.famMoney*.1)}
   }
  });
  // 형제
- F.sibs.forEach(s=>{if(!s.alive)return;s.age++;const h=(s.age<5?.01:.0012)+(s.age>60?.00006*Math.exp(.094*s.age):0)+c.lv*.0015;if(ch(h)){s.alive=false;s.dAge=p.age;L(p,p.track==='rogue'?`풍문으로 ${s.rel}(${s.name})의 부고를 들었다.`:`${s.rel}(${s.name})가 세상을 떠났다.`,'b');add(p,'happy',-8);add(p,'bond',-4)}});
+ F.sibs.forEach(s=>{if(!s.alive)return;s.age++;const h=(s.age<5?.01:.0012)+(s.age>60?.00006*Math.exp(.094*s.age):0)+c.lv*.0015;if(ch(h)){s.alive=false;s.dAge=p.age;L(p,p.track==='rogue'?`풍문으로 ${s.rel}(${s.name})의 부고를 들었다.`:`${s.rel}(${s.name})가 ${civDeath(s,c,false)}`,'b');add(p,'happy',-8);add(p,'bond',-4)}});
  // 배우자
- if(F.spouse&&F.spouse.alive){const s=F.spouse;s.age++;if(ch(.00006*Math.exp(.094*s.age)+.0015+(s.ninja?c.lv*.004:.001))){s.alive=false;L(p,s.left?`풍문으로 두고 온 배우자 ${I(s.name)} 세상을 떠났다는 소식을 들었다. 장례에도 갈 수 없었다.`:`배우자 ${I(s.name)} 세상을 떠났다.`,'b');add(p,'happy',-22);add(p,'bond',-10);p.flags.widow=true}}
+ if(F.spouse&&F.spouse.alive){const s=F.spouse;s.age++;if(ch(.00006*Math.exp(.094*s.age)+.0015+(s.ninja?c.lv*.004:.001))){s.alive=false;L(p,s.left?`풍문으로 두고 온 배우자 ${I(s.name)} 세상을 떠났다는 소식을 들었다. 장례에도 갈 수 없었다.`:`배우자 ${I(s.name)} ${s.ninja&&c.lv>=1.2&&ch(.5)?'전장에서 돌아오지 못했다.':civDeath(s,c,s.ninja)}`,'b');add(p,'happy',-22);add(p,'bond',-10);p.flags.widow=true}}
  // 자녀
  F.kids.forEach(k=>{
   if(!k.alive)return;k.age++;kidTick(p,k,c);
@@ -699,10 +699,7 @@ function worldEvents(p,c){
   const nin=p.track==='ninja'||p.track==='retired'&&p.rank>=1;
   L(p,'제4차 인계대전. 5대국이 처음으로 하나가 된 "닌자 연합군"이 결성되어 아카츠키와 마다라, 오비토에 맞섰다. 수많은 죽은 닌자가 되살려져 전장에 서는 지옥도가 펼쳐졌다.','w');
   if(nin&&p.age>=14&&p.nid!=='sound'){bigBattle(p,'war4');if(p.dead)return}
-  else if(p.age>=14&&ch(.12)){
-   L(p,'징집된 보급 부대의 일원으로 후방을 지켰다. 전장에서 날아든 소식은 대부분 슬픈 이야기였다.','w');
-   if(ch(.07)){die(p,'war','연합군의 보급 부대에서 습격을 받아 목숨을 잃었다.');return}
-  }
+  else if(!nin&&p.track!=='rogue'){try{civWar4(p)}catch(e){}if(p.dead)return}
   if(ch(.7))L(p,'하늘에 붉은 달이 떠오르고, 많은 이들이 하나의 긴 꿈에 빠졌다. 꿈에서 깨어난 사람들은 그 안에서 이상적인 삶을 보았다고 말했다. 곧 영웅들이 꿈을 깼다.','m');
  }
  if(y===18&&NID_GREAT.includes(n)){L(p,'대전이 끝났다. 5대국은 닌자 연합을 유지하고 서로를 적이 아닌 이웃으로 대하기 시작했다.','g');add(p,'happy',5)}
@@ -747,13 +744,13 @@ function growStats(p,c){
  // 소득
  if(a>=14){
   let inc=0;
-  if(p.track==='civ'){inc=(JOBS[p.job]||1.2)*18000*(0.55+p.jobLv*.4)*(0.8+R()*.4)*(p.flags.deprOn?0:(p.depr>=30?.8:1));if(f==='work')inc*=1.25}
+  if(p.track==='civ'){inc=(JOBS[p.job]||1.2)*23000*(0.55+p.jobLv*.4)*(0.8+R()*.4)*(p.flags.deprOn?0:(p.depr>=30?.8:1));if(f==='work')inc*=1.25}
   else if(p.track==='ninja'){inc=[0,16000,38000,95000][p.rank]*(p.role==='anbu'?1.3:1)*(0.8+R()*.4);if(p.flags.kage)inc=3500000}
   else if(p.track==='rogue')inc=(p.flags.mercenary?60000:8000)*(0.5+R());
   else if(p.track==='retired')inc=22000;
-  const cost=13000+Math.max(0,p.money)*.06-(p.flags.house?4000:0)+(p.fam.spouse?6000:0)+kidCost(p)+(p.flags.chronic?5000:0);
+  const cost=(p.track==='rogue'?5000+inc*.5:Math.min(13000,7000+inc*.45)+Math.max(0,inc-13000)*.2)+Math.max(0,p.money)*.06-(p.flags.house?4000:0)+(p.fam.spouse?4000:0)+kidCost(p)+(p.flags.chronic?5000:0);
   p.money+=inc-cost;
-  if(p.money<0&&p.money<-30000)p.money=-30000;
+  if(p.money<-600000)p.money=-600000;
  }
 }
 
@@ -1058,7 +1055,7 @@ function rogueTick(p,c){
   ]});
  }
  else if(k==='bandit'){L(p,'도적단의 두목이 되어 상인 행렬을 털었다. 누구도 이 이름을 쉽게 입에 올리지 못했다.','b');p.money+=rnd(30000,150000);add(p,'happy',-4)}
- else{L(p,'산속 폐가에서 숨죽이고 보낸 한 해. 가끔 옛 마을의 등불이 떠올랐다.','n');add(p,'happy',-3)}
+ else{L(p,'산속 폐가에서 숨죽이고 보낸 한 해. 가끔 오래전의 기억이 떠올랐다.','n');add(p,'happy',-3)}
  if(p.nid==='fire'&&c.y>=18&&p.age>20&&ch(.15)&&!p.flags.amnesty){p.flags.amnesty=true;L(p,'대전 이후 대사면이 이루어졌다는 소문을 들었다. 한때 탈주한 자들도 돌아갈 길이 열렸다.','g')}
 }
 const EV_CIV=[
@@ -1080,7 +1077,7 @@ const EV_ANY=[
  {k:'illness',w:p=>2+(p.st.health<45?4:0),f:p=>{const sev=ch(.2);add(p,'health',-(sev?20:8));if(sev&&ch(.3))p.flags.chronic=true;L(p,sev?'큰 병이 들어 몇 달 누웠다. 몸이 예전 같지 않다.':'독감에 걸려 며칠 앓았다.','b')}},
  {k:'accident',w:()=>1.2,f:p=>{add(p,'health',-rnd(5,12));L(p,pick(['지붕에서 떨어져 팔이 부러졌다.','길에서 마차에 치일 뻔했다.','산길에서 미끄러져 크게 다쳤다.']),'b')}},
  {k:'friend',w:()=>3,f:p=>{add(p,'bond',5);add(p,'happy',4);L(p,'오랜 친구와 재회해 밤새 이야기를 나눴다.','g')}},
- {k:'lossfriend',w:p=>p.age>=20?2:0,f:p=>{add(p,'bond',-4);add(p,'happy',-7);L(p,'오랜 친구의 부고를 들었다. '+pick(['전쟁에서였다.','병이었다.','임무 중이었다.']),'b')}},
+ {k:'lossfriend',w:p=>p.age>=20?2:0,f:p=>lossFriend(p)},
  {k:'disaster',w:p=>1.5,f:p=>{const N=NN(p);const t={fire:'숲 속 큰 불이 마을까지 번졌다.',wind:'사막의 모래폭풍이 마을을 덮쳤다.',water:'짙은 안개와 폭풍으로 어선들이 돌아오지 못했다.',lightning:'산사태가 마을 일부를 쓸고 갔다.',earth:'광산 붕괴로 마을이 슬픔에 잠겼다.',rain:'큰 홍수가 마을을 휩쓸었다.'}[p.nid]||'큰 재해가 닥쳤다.';L(p,t,'b');add(p,'happy',-5);p.money-=rnd(3000,20000);if(ch(.012)){die(p,'disaster','재해에 휘말려 목숨을 잃었다.')}}},
  {k:'bandit',w:p=>p.place==='rural'||p.place==='town'?2:.4,f:p=>{p.money-=rnd(5000,25000);add(p,'happy',-4);L(p,'도적단이 마을을 습격했다. 닌자가 오기 전에 모든 것이 털렸다.','b');if(ch(.012*(isNin(p)?.3:1)))die(p,'murder','도적에게 목숨을 잃었다.')}},
  {k:'epidemic',w:p=>.6,f:p=>{add(p,'health',-14);L(p,'역병이 도시를 휩쓸었다.','b');if(ch(.03*(p.st.health<45?2:1)))die(p,'disease','역병에 걸려 목숨을 잃었다.')}},
@@ -1138,8 +1135,8 @@ function kgTick(p){
 function clanTick(p,c){
  if(p.clan==='hyuga'&&p.age===5&&!p.hyugaMain){L(p,'분가의 아이는 이마에 "저주의 인장"을 받는다. 일족을 위해 종가를 지켜야 하는 운명이다. 이마가 오래 욱신거렸다.','b');add(p,'happy',-12);add(p,'bond',-5);p.flags.sealed=true}
  if((p.clan==='yuki'||p.clan==='kaguya')&&c.y>=-11&&c.y<=13&&!p.flags.bloodMistEnded&&p.nid==='water'&&p.age>=1){
-  if(ch(.1)){L(p,'혈계한계 보유자 숙청이 거세졌다. 일족 사람들이 하나둘 끌려가거나 몸을 숨겼다.','w');add(p,'happy',-10);p.flags.trauma=(p.flags.trauma||0)+1;
-   if(ch(.3)){die(p,'purge','혈계한계 숙청에 휘말려 목숨을 잃었다.');return}}
+  if(ch(.1)){L(p,rogueLike(p)?'풍문으로 혈계한계 일족에 대한 숙청이 거세졌다는 이야기를 들었다. 진짜인지는 알 수 없었다.':'혈계한계 보유자 숙청이 거세졌다. 일족 사람들이 하나둘 끌려가거나 몸을 숨겼다.','w');add(p,'happy',-10);p.flags.trauma=(p.flags.trauma||0)+1;
+   if(ch(.3)&&!rogueLike(p)){die(p,'purge','혈계한계 숙청에 휘말려 목숨을 잃었다.');return}}
  }
  if(p.jin){
   if(p.age>=2&&p.age<=14&&ch(.35)){L(p,pick(['마을 사람들이 나를 보면 길을 비켰다. 아이들은 같이 놀려 하지 않았다.','"괴물"이라 속삭이는 소리가 등 뒤에서 들렸다.','내 몸속에서 무언가가 낮게 숨 쉬는 느낌이 들었다.']),'b');add(p,'happy',-7);add(p,'bond',-5)}
@@ -1387,8 +1384,8 @@ const EV_ROGUE=[
     {l:'도주한다',s:'흔적을 지우고 달아난다',a:5,f:p=>{add(p,'health',-rnd(2,8));add(p,'happy',-3);L(p,'연막을 뿌리고 산 속으로 달아났다. 며칠 밤을 쉬지 못했다.','n')}}
    ]})}},
  {k:'r4',w:()=>3,f:p=>{L(p,'먼 거리에서 옛 마을의 닌자를 보고 몸을 숨겼다. 심장이 한참 뛰었다.','b');add(p,'happy',-3)}},
- {k:'r5',w:()=>2,f:p=>{L(p,'인편으로 가족의 소식이 닿았다. 편지를 끝까지 읽고 불에 던졌다.','b');add(p,'happy',-6);add(p,'bond',-2)}},
- {k:'r6',w:()=>2,f:p=>{L(p,`국경 언덕에서 ${vil(p)} 쪽 불빛을 오래 바라봤다. 돌아갈 수 없는 곳이다.`,'n');add(p,'happy',-4)}},
+ {k:'r5',w:()=>2,f:p=>{L(p,'풍문으로 가족의 소식을 들었다. 진짜인지는 알 수 없었다. 확인할 방법도 없었다.','b');add(p,'happy',-6);add(p,'bond',-2)}},
+ {k:'r6',w:()=>2,f:p=>{L(p,`국경 언덕에서 먼 불빛을 오래 바라봤다. 어디에도 돌아갈 곳이 없었다.`,'n');add(p,'happy',-4)}},
  {k:'r7',w:()=>3,f:p=>{p.money+=rnd(2000,9000);L(p,'가짜 이름으로 일용직을 구해 겨우 끼니를 이었다.','n')}},
  {k:'r8',w:()=>3,f:p=>{add(p,'health',-10);L(p,'혼자 병에 걸렸지만 의원을 찾을 수 없었다. 산속 동굴에서 버텼다.','b')}},
  {k:'r9',w:p=>p.sk.nin>35?2:0,f:p=>{sk(p,'nin',5);add(p,'health',-5);L(p,'손에 넣은 비전 두루마리를 홀로 연구했다. 효과는 있었지만 몸이 상했다.','n')}},
@@ -1620,7 +1617,7 @@ const EV_CROSS=[
  {k:'lateNinja',once:true,w:(p,c)=>p.track==='civ'&&p.age>=16&&p.age<=32&&p.pot>=48&&NN(p).hid&&c.lv>=1.2?3:(p.track==='civ'&&p.age>=16&&p.age<=28&&p.pot>=55&&NN(p).hid?.7:0),f:p=>{
    ask(p,{title:'늦깎이 닌자 모집',body:`${vil(p)}에서 잠재력이 있는 민간인을 중도 모집한다. 어린 시절부터 훈련한 이들보다 늦지만 기회다.`,opts:[
     {l:'지원한다',s:'속성 훈련 뒤 하급닌자로 배치된다',a:3,f:p=>{p.track='ninja';p.rank=1;p.role='field';p.sk.nin+=10;p.sk.tai+=8;p.sk.chakra=Math.max(p.sk.chakra,20);p.mis={D:0,C:0,B:0,A:0,S:0};p.team=null;L(p,'민간 일을 접고 닌자로 지원했다. 몇 달의 속성 훈련 끝에 이마 보호대를 받았다.','m');ach(p,'늦깎이 닌자')}},
-    {l:'지금의 삶을 지킨다',s:'',a:5,f:p=>{L(p,'닌자 모집을 사양했다. 가게가 더 소중했다.','n')}}]})}},
+    {l:'지금의 삶을 지킨다',s:'',a:5,f:p=>{L(p,'닌자 모집을 사양했다. '+(p.job?p.job+' 일이':'지금의 삶이')+' 더 소중했다.','n')}}]})}},
  {k:'quitNinja',once:true,w:p=>p.track==='ninja'&&p.rank>=1&&p.age>=20&&((p.flags.trauma||0)>=2||p.st.happy<30)?3:0,f:p=>{
    ask(p,{title:'칼을 내려놓을까',body:'오랜 전투와 상실이 쌓여 마음이 닳았다. 더는 닌자로 살고 싶지 않다는 생각이 든다.',opts:[
     {l:'닌자를 그만두고 민간인이 된다',s:'이마 보호대를 반납한다',a:3,f:p=>{p.prevLabel=RANKS[p.rank];p.track='civ';p.job=pick(nationJobs(NN(p)));p.jobLv=1;p.role='';add(p,'happy',10);add(p,'bond',4);L(p,`이마 보호대를 반납하고 ${p.job}${jo('','')}의 길을 택했다. 가슴이 가벼워졌다.`.replace('의 길을','의 길을'),'m');ach(p,'닌자를 그만두다')}},
@@ -3328,11 +3325,11 @@ function beginLife(){S.busy=false;S.vis=S.p.log.length;show('life');renderLife()
 function bar(label,v){return `<div class="bar"><span>${label}</span><i><u style="width:${Math.round(v)}%"></u></i><em>${Math.round(v)}</em></div>`}
 function renderLife(){
  const p=S.p,c=ctxOf(p),N=NN(p);
- const ninja=p.track==='academy'||isNin(p)||p.rank>0;
+ const ninja=p.track==='academy'||isNin(p)||p.track==='retired';
  const vis=p.log.slice(0,Math.min(S.vis,p.log.length)).reverse();const shown=vis.slice(0,300);
  const peers=S.peers.map(q=>`<div class="peer ${q.dead?'dead':''}"><div class="k" style="background:${NATIONS[q.nid].col}">${NATIONS[q.nid].kj}</div><div>${esc(q.name)} · ${q.age}세<span>${NATIONS[q.nid].name} · ${statusText(q)}</span></div></div>`).join('');
  const mp=Array.from({length:Math.max(80,p.map.length)},(_,i)=>`<i class="${i<p.map.length?'ph-'+p.map[i]:''} ${i===p.map.length-1?'cur':''}" title="${i}세"></i>`).join('');
-const focusHtml=p.age>=6?`<div class="focus"><div class="fh">올해의 초점</div><div class="chips">${Object.keys(FOCI).map(k=>`<button class="chip sm ${p.focus===k?'on':''}" data-f="${k}">${FOCI[k]}</button>`).join('')}</div><p class="hint" style="margin:6px 0 0">${FOCI_D[p.focus]}</p>${S.dl?`<p class="hint" style="margin:3px 0 0">지난해 변화: ${S.dl}</p>`:''}${(p.tired||0)>=30?`<p class="hint" style="margin:3px 0 0;color:#b04a3a">피로 ${(p.tired||0)>=55?'위험':'높음'} — 쉬지 않으면 건강이 크게 상합니다.</p>`:''}</div>`:'';
+const focusHtml=p.age>=6?`<div class="focus"><div class="fh">올해의 초점</div><div class="chips">${focusKeys(p).map(k=>`<button class="chip sm ${p.focus===k?'on':''}" data-f="${k}">${FOCI[k]}</button>`).join('')}</div><p class="hint" style="margin:6px 0 0">${FOCI_D[p.focus]||''}</p>${S.dl?`<p class="hint" style="margin:3px 0 0">지난해 변화: ${S.dl}</p>`:''}${(p.tired||0)>=30?`<p class="hint" style="margin:3px 0 0;color:#b04a3a">피로 ${(p.tired||0)>=55?'위험':'높음'} — 쉬지 않으면 건강이 크게 상합니다.</p>`:''}</div>`:'';
  $('#life').innerHTML=`<div class="wrap">
  <div class="top"><div class="row"><div class="age disp">${p.age}<small>세</small></div><div class="era"><b>${eraName(c.y)}</b>${yearLabel(c.y)}${c.lv>=1.2?' · 전란':''}</div><div class="mini"><button class="chip sm" id="bf">가족</button><button class="chip sm" id="bn">차크라</button></div></div>
  <div class="ctl"><button class="chip" id="pp">${S.paused?'▶ 재생':'❚❚ 멈춤'}</button>${[1,2,4,8,16].map(s=>`<button class="chip ${S.speed===s?'on':''}" data-s="${s}">${s}×</button>`).join('')}<button class="chip" id="nx">다음 »</button><span class="grow"></span><button class="chip ${S.auto?'on':''}" id="au">자동 결정</button></div><label class="chk sm"><input type="checkbox" id="sm" ${S.same?'checked':''}><span>같은 질문이 나오면 이전과 같은 답으로 자동 선택</span></label></div>
@@ -3432,9 +3429,10 @@ function showDecision(){
  if(S.busy&&p.q[0].at!=null&&p.q[0].at>S.vis){closeSheet();return}
  const d=p.q[0];
  if(d.anim==='paper'){paperAnim(p,d);return}
- openSheet(`<button class="chip sm peekb" id="peek">잠시 내려서 상황 보기</button><h2 class="disp">${esc(d.title)}</h2><p class="b">${esc(d.body)}</p>${d.opts.map((o,i)=>`<button class="opt" data-i="${i}"><b>${esc(o.l)}</b>${o.s?`<span>${esc(o.s)}</span>`:''}</button>`).join('')}`);
+ openSheet(`<button class="chip sm peekb" id="peek">잠시 내려서 상황 보기</button><h2 class="disp">${esc(d.title)}</h2><p class="b">${esc(d.body)}</p>${d.opts.map((o,i)=>`<button class="opt${optDis(p,o)?' dis':''}" data-i="${i}"><b>${esc(o.l)}</b>${optNote(p,o)?`<span>${esc(optNote(p,o))}</span>`:''}</button>`).join('')}`);
  $('#peek').onclick=()=>{$('#sheetbg').classList.add('peek');$('#peekbar').style.display='flex'};
  document.querySelectorAll('#sheet .opt').forEach(b=>b.onclick=()=>{
+  if(b.classList.contains('dis'))return;
   const dd=p.q.shift();resolveDecision(p,dd,+b.dataset.i);
   afterChoose(p);
  });
@@ -3562,4 +3560,358 @@ async function saveShot(){
 }
 
 $('#peekbtn').onclick=()=>{$('#sheetbg').classList.remove('peek');$('#peekbar').style.display='none'};
+</script>
+<script>
+// ================= ENGINE 24: 민간인 시점 · 자연재해 · 금전 압박 · 초점 정리 =================
+const civLike=p=>p.track==='civ'||p.track==='child';
+function trainOK(p){return p.track==='academy'||p.track==='ninja'||p.track==='rogue'||p.track==='retired'||(p.track==='child'&&NN(p).hid&&p.age>=6)}
+function focusKeys(p){return Object.keys(FOCI).filter(k=>k!=='train'||trainOK(p))}
+const cashOf=p=>p.age<16?p.famMoney:p.money;
+function creditOf(p){
+ if(p.age<16||p.track==='rogue'||p.flags.hidden)return 0;
+ if(p.track==='ninja')return [0,20000,35000,60000][p.rank]||20000;
+ if(p.track==='civ')return 15000+(p.jobLv||0)*12000+(p.flags.house?30000:0);
+ if(p.track==='retired')return 20000;
+ return 8000;
+}
+const afford=(p,v)=>p.age<16||cashOf(p)-v>=-creditOf(p);
+function optDis(p,o){return !!(o.need&&!afford(p,o.need))}
+function optNote(p,o){
+ if(optDis(p,o))return '돈이 모자라다. 빚을 더 낼 수도 없다';
+ if(o.need&&p.age>=16&&cashOf(p)<o.need)return (o.s?o.s+' · ':'')+'빚을 내야 한다 (이자가 붙는다)';
+ return o.s||'';
+}
+// 선택지 비용 자동 인식 + 부족하면 막기
+const _ask24=ask;
+ask=function(p,o){
+ (o.opts||[]).forEach(x=>{if(x.need==null){const m=/\(([\d,]+)료\)/.exec(x.l||'');x.need=m?+m[1].replace(/,/g,''):0}});
+ _ask24(p,o);
+};
+const _applyChoice24=applyChoice;
+applyChoice=function(p,d,o,rec){
+ if(o&&optDis(p,o)){
+  const ok=d.opts.filter(x=>!optDis(p,x));
+  o=wp(ok,x=>(x.a==null?1:x.a))||ok[0]||o;
+ }
+ return _applyChoice24(p,d,o,rec);
+};
+
+// ---------- 민간인의 죽음 ----------
+function civDeath(q,c,ninja){
+ const lv=c.lv,a=q.age||30;
+ if(a>62&&ch(.8))return pick(['노환으로 세상을 떠났다.','잠자듯 조용히 세상을 떠났다.']);
+ if(a<8)return pick(['열병으로 세상을 떠났다.','병으로 세상을 떠났다.','사고로 세상을 떠났다.']);
+ const o=[['병으로 앓다 세상을 떠났다.',4],['사고로 세상을 떠났다.',1.5],['역병이 돌던 해에 세상을 떠났다.',.6]];
+ if(!ninja)o.push(['산적의 습격을 받아 목숨을 잃었다.',1+(lv>=1?.5:0)],['여행 중 도적을 만나 돌아오지 못했다.',.8],['산사태로 집과 함께 변을 당했다.',.5],['큰물에 휩쓸려 세상을 떠났다.',.4],['전란에 휘말려 목숨을 잃었다.',lv>=1.2?lv*1.6:.1],['전장에서 밀려온 병사들의 약탈에 목숨을 잃었다.',lv>=1.2?lv*.9:0]);
+ return wp(o,x=>x[1])[0];
+}
+function lossFriend(p){
+ const c=ctxOf(p);add(p,'bond',-4);add(p,'happy',-7);
+ if(isNin(p)||p.track==='retired'){L(p,'오랜 친구의 부고를 들었다. '+pick(['전쟁에서였다.','병이었다.','임무 중이었다.']),'b');return}
+ const o=[['오랜 병이었다.',3],['산적의 습격을 받았다고 한다.',1.2],['장삿길에서 도적을 만났다고 한다.',1],['산사태로 집이 무너졌다고 한다.',.6],['큰물에 휩쓸렸다고 한다.',.4],['전란에 휘말려 피난길에서 목숨을 잃었다고 한다.',c.lv>=1.2?c.lv*1.5:.05],['징발에 항의하다 병사들에게 변을 당했다고 한다.',c.lv>=1.2?c.lv:0]];
+ L(p,'오랜 친구의 부고를 들었다. '+wp(o,x=>x[1])[0],'b');
+}
+function dKillParent(p,cause){
+ const q=pick(p.fam.parents.filter(x=>!x.dead&&!x.unk));if(!q)return;
+ q.dead=true;q.deadAge=p.age;q.dcause=cause.replace(/\.$/,'');
+ L(p,`${q.rel}(${q.name})가 ${cause}`,'b');add(p,'happy',-18);add(p,'bond',-14);p.flags.trauma=(p.flags.trauma||0)+1;
+ if(p.fam.parents.every(x=>x.dead||x.unk)){p.orphaned=true;orphanAsk(p)}else{p.famMoney*=.7;p.cls=Math.max(1,p.cls-1)}
+}
+
+// ---------- 민간인의 전쟁 ----------
+function civWar4(p){
+ L(p,pick(['먼 하늘이 밤마다 붉게 물들었다. 사람들은 문을 걸어 잠그고 연합군의 소식만 기다렸다.','전쟁터는 멀었지만 시장의 쌀값이 하루가 다르게 올랐다.','피난민 행렬이 마을을 지나갔다. 아무도 어디로 가야 하는지 알지 못했다.']),'w');
+ add(p,'happy',-4);p.money-=rnd(1000,6000);
+ if(ch(.02)&&p.age>=14){die(p,'war','전란에 휘말려 목숨을 잃었다.')}
+}
+const CW_ADULT=[
+ '먼 곳에서 폭음이 울렸다. 밤새 잠들지 못하고 창가에 앉아 있었다.',
+ '전쟁은 끝날 기미 없이 이어졌다. 소식이 들릴 때마다 가슴이 내려앉았다.',
+ '하늘 위로 닌자들의 그림자가 지나갔다. 창을 닫고 숨을 죽였다.',
+ '마을 광장에 전사자 명단이 붙었다. 아는 이름이 없기를 빌며 한 줄씩 읽어 내려갔다.',
+ '국경 쪽에서 불길이 올랐다는 소문에 짐을 싸 두고 밤을 새웠다.',
+ '장이 열리지 않아 한동안 수입이 끊겼다. 전쟁이 일상을 갉아먹고 있었다.',
+ '이웃집 아들이 징집되어 떠났다. 배웅하는 어머니의 어깨가 오래 떨렸다.',
+ '피난민 가족을 며칠 집에 들였다. 그들이 전하는 전장 이야기는 끔찍했다.'];
+const CW_KID=[
+ '어른들이 속삭이는 전쟁 이야기에 밤마다 이불을 뒤집어쓰고 떨었다.',
+ '멀리서 들려오는 큰 소리에 놀라 어머니 품으로 파고들었다.',
+ '친구네 아버지가 전쟁터에서 돌아오지 않았다. 친구는 한동안 말이 없었다.',
+ '창밖으로 닌자들이 지붕 위를 달려 지나가는 것을 보았다. 무서우면서도 눈을 뗄 수 없었다.'];
+function civWarTick(p,c){
+ if(c.lv<1.1||!civLike(p)||p.age<3)return;
+ if(!ch(Math.min(.6,.18+c.lv*.15)))return;
+ if(p.age<14){L(p,pick(CW_KID),'w');add(p,'happy',-3);return}
+ const r=R();
+ if(r<.55){L(p,pick(CW_ADULT),'w');add(p,'happy',-3)}
+ else if(r<.8){L(p,pick(['징발대가 찾아와 곡식과 가축 일부를 가져갔다. 따질 수도 없었다.','전쟁 세금이 늘어 살림이 팍팍해졌다.','물가가 치솟아 장바구니가 한없이 가벼워졌다.']),'w');p.money-=rnd(2000,10000);add(p,'happy',-3)}
+ else{
+  L(p,pick(['패잔병들이 마을을 지나며 가게를 털고 갔다.','전선이 가까워지자 이웃들과 함께 마을을 떠나 한동안 피난살이를 했다.','전장이 된 옆 마을에서 피난민이 밀려들었다. 마을은 하루아침에 북적였다.']),'w');
+  p.money-=rnd(3000,14000);add(p,'happy',-5);
+  if(ch(.012*c.lv*(p.place==='rural'?1.5:1))){die(p,'war','전란에 휘말려 목숨을 잃었다.');return}
+  if(ch(.05)){add(p,'health',-rnd(4,12));L(p,'피난길에서 다쳐 한동안 절뚝거렸다.','b')}
+ }
+}
+
+// ---------- 자연재해 ----------
+const DIS_W={
+ landslide:{lightning:3,earth:3,grass:1.5,waterfall:2,iron:2,rain:1.5,fire:1,wind:.2,hotspring:1.5,_:.7},
+ flood:{rain:3,water:2.5,waves:2,fire:1.2,grass:1.5,whirl:1,wind:.5,sound:1.8,tea:1.2,_:1},
+ quake:{earth:2,lightning:1.5,whirl:1.2,water:1.5,hotspring:1.5,_:1},
+ drought:{wind:3.5,earth:1.2,fire:1,grass:1.5,_:.8}
+};
+const DIS_N={landslide:'산사태',flood:'홍수',quake:'지진',drought:'가뭄'};
+function disText(t,sev,nid){
+ const sea=['water','waves','whirl'].includes(nid);
+ if(t==='landslide')return sev>1?'며칠째 쏟아진 비에 산비탈이 무너져 마을 한쪽을 덮쳤다. 집 여러 채가 흙더미에 묻혔다.':'산사태로 길이 끊겨 며칠 동안 고립되었다. 비탈 아래 몇몇 집이 무너졌다.';
+ if(t==='flood')return sea?(sev>1?'해일이 항구와 아랫마을을 삼켰다. 배와 집이 함께 떠내려갔다.':'폭풍에 바닷물이 넘쳐 항구 근처가 물에 잠겼다.'):(sev>1?'둑이 터져 강이 넘쳤다. 논밭과 집들이 흙탕물에 떠내려갔다.':'장마에 강이 넘쳐 마을 아랫녘이 물에 잠겼다.');
+ if(t==='quake')return sev>1?'땅이 크게 흔들렸다. 지붕이 내려앉고 담이 무너져 마을 곳곳이 폐허가 되었다.':'땅이 흔들리며 담이 무너지고 기와가 쏟아졌다. 사람들이 거리로 뛰쳐나왔다.';
+ return sev>1?'여름 내내 비 한 방울 내리지 않았다. 우물이 마르고 작물이 타들어 가 큰 흉년이 들었다.':'오랜 가뭄으로 우물이 줄고 작물이 시들었다. 물값이 눈에 띄게 올랐다.';
+}
+function disaster24(p,c){
+ const wt=Object.keys(DIS_N).map(t=>[t,DIS_W[t][p.nid]!=null?DIS_W[t][p.nid]:DIS_W[t]._]);
+ const t=wp(wt,x=>x[1])[0];const sev=ch(.3)?2:1;
+ const nm=DIS_N[t];
+ L(p,disText(t,sev,p.nid),'b');p.flags.disN=(p.flags.disN||0)+1;
+ const fatal=(t==='drought'?.002:.012)*sev*(p.place==='rural'?1.5:1);
+ // ----- 아이
+ if(p.age<16&&p.track!=='academy'){
+  p.famMoney*=(sev>1?.75:.9);add(p,'happy',-6);add(p,'health',-rnd(1,5));
+  if(t!=='drought'&&ch(.05*sev)&&p.fam.parents.some(x=>!x.dead&&!x.unk)){dKillParent(p,t==='landslide'?'산사태에 휩쓸려 세상을 떠났다.':t==='flood'?'큰물에 휩쓸려 세상을 떠났다.':'무너진 집에 깔려 세상을 떠났다.');return}
+  L(p,pick(['어른들과 함께 임시 천막에서 며칠을 지냈다.','한동안 배급 죽으로 끼니를 이었다.','무너진 집을 치우는 어른들 곁에서 작은 일을 도왔다.']),'n');
+  if(ch(.4))later(p,rnd(1,3),'disAfter',{nm,t});return;
+ }
+ // ----- 직접 피해
+ if(ch(fatal)){die(p,'disaster',t==='quake'?'무너진 건물에 깔려 목숨을 잃었다.':t==='flood'?'큰물에 휩쓸려 목숨을 잃었다.':'산사태에 휩쓸려 목숨을 잃었다.');return}
+ // ----- 닌자: 복구 작전
+ if(p.track==='ninja'||p.track==='academy'){
+  if(p.track==='academy'){L(p,'아카데미 학생들도 교관을 따라 복구 현장에 나가 짐을 날랐다.','n');add(p,'bond',3);add(p,'happy',-2);return}
+  ask(p,{title:`${nm} 복구 작전`,body:`${vil(p)}가 ${nm} 피해 복구를 위해 닌자들을 동원한다. 무너진 곳에는 아직 사람이 묻혀 있을지 모른다.`,opts:[
+   {l:'구조 현장에 앞장선다',s:'목숨을 구할 수 있지만 위험하다',a:3,f:p=>{
+     tr(p,'brave',.5);sk(p,'tai',1);p.money+=rnd(3000,9000)*p.rank;
+     if(ch(.02*sev)&&p.rank<3){die(p,'disaster','구조 도중 2차 붕괴에 휩쓸려 목숨을 잃었다.');return}
+     L(p,pick(['밤새 흙더미를 파헤쳐 아이 하나를 꺼냈다. 아이의 울음소리가 오래 귓가에 남았다.','분신술로 잔해를 치우고 생존자를 찾아 사흘을 쉬지 못했다.']),'m');add(p,'bond',6);add(p,'happy',2);
+     if(ch(.3*sev)){add(p,'health',-rnd(8,20));if(ch(.3)){p.flags.chronic=true;L(p,'복구 중 허리와 다리를 크게 다쳤다. 그날 이후 비 오는 날이면 몸이 쑤신다.','b')}else L(p,'구조 중 부상을 입어 한동안 병상에 누웠다.','b')}
+     if(ch(.35))later(p,rnd(1,3),'disAfter',{nm,t})}},
+   {l:'정해진 구역만 맡는다',s:'무리하지 않고 임무를 마친다',a:4,f:p=>{p.money+=rnd(1500,4000)*p.rank;add(p,'bond',2);add(p,'health',-2);L(p,`맡은 구역에서 ${nm} 잔해를 치우고 물자를 날랐다. 고된 며칠이었다.`,'n')}},
+   p.rank>=2?{l:'복구 작전을 지휘한다',s:'중급닌자 이상. 책임이 따른다',a:2,f:p=>{p.fame=(p.fame||0)+.6;tr(p,'loyal',.3);add(p,'bond',4);add(p,'happy',-2);p.money+=rnd(4000,9000);L(p,'복구 작전을 지휘해 주민들의 대피와 구조를 이끌었다. 마을에서 이름이 오르내렸다.','m')}}:null].filter(Boolean)});
+  return;
+ }
+ if(p.track==='rogue'){
+  L(p,pick(['재해 현장을 지나며 폐허가 된 마을을 외면할 수 없었다.','재해로 길이 끊겨 며칠을 산속에서 굶으며 버텼다.']),'n');add(p,'health',-rnd(3,9));p.money=Math.max(0,p.money-rnd(0,5000));return;
+ }
+ // ----- 민간인: 직접 피해 + 대응
+ const loss=rnd(5000,22000)*sev*(p.jobLv>=2?1.4:1);
+ p.money-=Math.round(loss);add(p,'happy',-5);
+ if(t==='drought'){add(p,'health',-rnd(1,4));p.famMoney*=.9;L(p,'곡물 값이 폭등해 살림이 휘청였다. 우물물 값까지 내야 했다.','n')}
+ else if(p.flags.house&&ch(.25*sev)){p.flags.house=false;L(p,`${nm}로 집이 무너졌다. 세간도 대부분 잃었다.`,'b');add(p,'happy',-6)}
+ else if(ch(.25*sev)){add(p,'health',-rnd(6,16));if(ch(.3)){p.flags.chronic=true;L(p,'잔해에 깔려 허리와 다리를 다쳤다. 낫고 나서도 날씨가 궂으면 쑤신다.','b')}else L(p,'피난 중 크게 다쳐 몇 주를 누워 지냈다.','b')}
+ ask(p,{title:`${nm} 이후`,body:p.job?`${p.job} 일은 이대로 접어야 할지 모른다. 무너진 터전 앞에서 무엇부터 할까?`:'무너진 터전 앞에서 무엇부터 할까?',opts:[
+  {l:'이웃과 함께 복구에 나선다',s:'몸은 고되지만 마음이 모인다',a:4,f:p=>{add(p,'health',-rnd(1,6));add(p,'bond',5);add(p,'happy',2);tr(p,'kind',.4);L(p,'이웃들과 삽과 지게를 들고 복구에 나섰다. 서로 밥을 나눠 먹으며 버텼다.','m');if(ch(.12*sev)){add(p,'health',-8);p.flags.chronic=true;L(p,'무리한 복구 작업 끝에 허리를 상했다.','b')}if(ch(.35))later(p,rnd(1,3),'disAfter',{nm,t})}},
+  {l:'재건비를 들여 터전을 일으킨다 (20,000료)',s:'일터를 지킨다',a:3,f:p=>{spend(p,20000);L(p,'큰돈을 들여 일터를 다시 세웠다. 빚이 남을지라도 서둘러 문을 열었다.','g');add(p,'happy',2)}},
+  {l:'터전을 버리고 떠난다',s:'새 삶이 기다릴지, 더 힘들지 알 수 없다',a:1,f:p=>{
+    add(p,'happy',-6);add(p,'bond',-6);p.jobLv=Math.max(0,(p.jobLv||0)-1);p.flags.house=false;
+    L(p,'폐허가 된 터전을 두고 짐을 쌌다. 정든 이웃들과 인사도 제대로 못 한 채 길을 나섰다.','b');
+    if(ch(.25)){p.money-=rnd(3000,12000);L(p,'떠나는 길에 도적을 만나 가진 것을 빼앗겼다.','b')}}}
+ ]});
+}
+LATER.disAfter=(p,d)=>{
+ const nm=(d&&d.nm)||'재해',t=d&&d.t;
+ if(ch(.5)){add(p,'happy',-4);const m={landslide:'비가 오래 내리면 산비탈이 무너질까 잠을 설쳤다.',flood:'비 오는 날이면 강물 소리에 잠을 설쳤다.',quake:'땅이 조금만 울려도 가슴이 철렁 내려앉았다.',drought:'비가 오지 않는 날이 길어지면 불안이 되살아났다.'};L(p,`${nm}의 기억이 남아 있다. ${m[t]||'문득 그날 밤이 떠올랐다.'}`,'b')}
+ else{add(p,'bond',3);L(p,`${nm} 때 함께 버틴 이웃들과는 지금도 각별한 사이다.`,'g')}
+};
+
+// ---------- 빚과 가난, 부유함 ----------
+const DEBT_TXT=['고리대금업자의 수하가 문 앞을 서성였다. 이웃들이 수군거렸다.','빚 독촉장이 또 날아들었다. 이자는 원금보다 빨리 불어난다.','빚 때문에 밤마다 장부를 들여다보다 잠을 설쳤다.','빚쟁이를 피해 먼 길로 돌아 다니는 버릇이 생겼다.'];
+function debtTick(p){
+ const F=p.flags;
+ if(p.age<16){
+  if(p.money<0){p.famMoney=Math.max(0,p.famMoney+p.money);p.money=0}
+  if(p.famMoney<8000&&ch(.3)){add(p,'health',-rnd(1,3));add(p,'happy',-2);L(p,pick(['끼니를 거르는 날이 있었다. 배고픔이 일상이 되었다.','헌 옷을 물려 입고 빈 손으로 학교를 오갔다.','어른들의 한숨 섞인 살림 이야기를 귓등으로 들으며 자랐다.']),'b')}
+  else if(p.famMoney>700000&&ch(.2)){add(p,'know',1.5);add(p,'happy',1.5);L(p,pick(['좋은 스승이 집으로 찾아와 글과 예법을 가르쳤다.','넉넉한 집에서 부족함 없이 자랐다.','큰 저택에서 하인들의 시중을 받으며 자랐다.']),'g')}
+  return;
+ }
+ // 탈주자는 빚을 낼 수 없다: 돈이 바닥나면 굶는다
+ if(p.track==='rogue'||F.hidden){
+  if(p.money<0){p.money=0;add(p,'health',-rnd(2,6));add(p,'happy',-3);if(ch(.4))L(p,pick(['먹을 것을 구하지 못해 며칠을 굶었다.','쫓기는 몸으로 일을 구하기 어려웠다. 허기가 가장 큰 적이었다.']),'b')}
+  return;
+ }
+ const cash=p.money;
+ if(cash<0){
+  const debt=-cash;
+  if(!F.indebt){F.indebt=p.age;L(p,'빚이 생겼다. 해마다 이자가 붙기 시작한다.','b');add(p,'happy',-3)}
+  const rate=debt>60000?.16:debt>25000?.12:.08;
+  p.money-=Math.round(debt*rate);
+  add(p,'happy',-(debt>60000?4:debt>25000?3:1.5));
+  F.debtYrs=(F.debtYrs||0)+1;
+  if(debt>12000&&ch(.35))L(p,pick(DEBT_TXT),'b');
+  if(debt>50000)add(p,'health',-1.5);
+  if(debt>30000&&!p.q.length&&ch(.3)&&(F.collAt==null||p.age-F.collAt>=3)){F.collAt=p.age;collectorAsk(p,debt)}
+  else if(debt>90000&&ch(.4))seize(p);
+ }else if(F.indebt){delete F.indebt;L(p,'빚을 모두 갚았다. 어깨가 한결 가벼워졌다.','g');add(p,'happy',5)}
+ if(cash<4000&&cash>=0&&p.track!=='retired'){
+  if(ch(.45)){add(p,'health',-rnd(1,3));L(p,pick(['가진 돈이 바닥나 끼니를 줄였다.','약값이 없어 몸이 아파도 참고 일했다.','한 푼이 아쉬워 모든 것을 따져야 했다.']),'b')}
+  add(p,'happy',-2);
+  if(ch(.025)&&kidsMine(p).some(k=>k.alive&&k.age<12)){const k=pick(kidsMine(p).filter(k=>k.alive&&k.age<12));kidDie(p,k,ctxOf(p),'가난 속에 병을 이기지 못하고 세상을 떠났다.')}
+ }
+ if(cash>=250000){add(p,'happy',1.5);add(p,'health',1)}
+}
+function seize(p){
+ const F=p.flags;
+ if(p.track==='civ'){
+  p.jobLv=Math.max(0,(p.jobLv||0)-1);
+  if(F.house){F.house=false;L(p,'빚을 갚지 못해 집이 압류되었다. 짐을 싸서 셋집으로 쫓겨났다.','b')}else L(p,'빚 때문에 가게의 물건과 도구가 압류되었다. 장사를 접다시피 했다.','b');
+ }else{F.gear=0;sk(p,'tai',-1);L(p,'빚 때문에 급여가 차압되고 닌자도구까지 팔아야 했다.','b')}
+ p.money+=rnd(40000,80000);add(p,'happy',-10);add(p,'bond',-8);p.fame=(p.fame||0)-.5;
+ if(p.fam.spouse&&p.fam.spouse.alive&&ch(.2)){add(p,'bond',-8);L(p,'배우자와 빚 문제로 다투는 날이 많아졌다.','b')}
+}
+function collectorAsk(p,debt){
+ const ninja=p.track==='ninja';
+ ask(p,{title:'빚쟁이가 찾아왔다',body:`고리대금업자의 수하가 문 앞에 섰다. 빚은 ${fmtMoney(debt)}까지 불었다. 이대로면 이자가 원금을 삼킨다.`,opts:ninja?[
+  {l:'임무를 몰아서 맡아 갚는다',s:'몸이 상한다. 위험한 임무가 늘어난다',a:4,f:p=>{p.money+=rnd(20000,40000);add(p,'health',-6);p.tired=(p.tired||0)+4;if(ch(.08))maim(p,'무리한 임무 끝에',null);L(p,'수당 좋은 임무를 가리지 않고 맡아 빚을 줄여 갔다.','n')}},
+  {l:'상부에 사정을 털어놓는다',s:'평판이 깎이지만 급한 불은 끈다',a:3,f:p=>{p.fame=(p.fame||0)-.5;add(p,'bond',-3);p.money+=rnd(12000,25000);L(p,'상급자에게 사정을 털어놓고 선지급을 받았다. 낯이 뜨거웠다.','n')}},
+  {l:'닌자도구를 팔아 갚는다',s:'당장은 편하지만 장비를 잃는다',a:2,f:p=>{p.flags.gear=0;sk(p,'tai',-1);p.money+=rnd(15000,30000);L(p,'아끼던 닌자도구를 팔아 빚 일부를 막았다.','b')}}
+ ]:[
+  {l:'일을 늘려 갚는다',s:'몸이 상한다',a:4,f:p=>{p.money+=rnd(15000,32000);add(p,'health',-6);add(p,'bond',-3);p.tired=(p.tired||0)+4;L(p,'새벽부터 밤까지 일을 늘려 빚을 줄여 갔다.','n')}},
+  {l:'세간과 가게 일부를 넘긴다',s:'터전이 줄어든다',a:3,f:p=>{p.money+=25000;add(p,'happy',-6);if(p.flags.house){p.flags.house=false;L(p,'집을 팔아 빚을 막고 셋집으로 옮겼다.','b')}else{p.jobLv=Math.max(0,(p.jobLv||0)-1);L(p,'가게 도구와 물건을 넘겨 빚을 막았다.','b')}}},
+  {l:'이웃과 친지에게 손을 벌린다',s:'관계가 상한다',a:3,f:p=>{add(p,'bond',-6);add(p,'happy',-3);p.money+=rnd(10000,25000);L(p,'이웃과 친지에게 머리를 숙여 돈을 빌렸다. 체면은 구겨졌다.','n')}},
+  {l:'야반도주한다',s:'빚은 사라지지만 모든 것을 두고 떠난다',a:1,f:p=>{p.money=0;p.jobLv=0;p.flags.house=false;add(p,'bond',-15);add(p,'happy',-8);tr(p,'defiant',.5);L(p,'밤을 틈타 빈 몸으로 마을을 떠났다. 빚쟁이들이 한동안 뒤를 쫓았다.','b');if(ch(.3)){add(p,'health',-15);L(p,'붙잡혀 호되게 맞았다. 몸이 오래 욱신거렸다.','b')}}}
+ ]});
+}
+// 부유함의 이점: 큰 병엔 명의, 투자와 저택
+swap(EV_ANY,'illness',{k:'illness',w:p=>2+(p.st.health<45?4:0),f:p=>{
+ const sev=ch(.22);
+ if(p.age<16){add(p,'health',-(sev?20:8));if(sev&&ch(.3))p.flags.chronic=true;L(p,sev?'큰 병이 들어 몇 달 누웠다. '+(p.cls>=4?'용한 의원이 오래 곁을 지켰다.':'약값을 대느라 집안이 휘청였다.'):'독감에 걸려 며칠 앓았다.','b');if(sev&&p.cls<=2)p.famMoney*=.85;return}
+if(!sev){const pay=cashOf(p)>=-creditOf(p)+1500;if(pay){spend(p,1500);add(p,'health',-3);L(p,'독감에 걸려 며칠 앓았다. 약값이 조금 들었다.','b')}else{add(p,'health',-9);L(p,'독감에 걸렸지만 약값이 없어 그냥 버텼다. 오래 앓았다.','b')}return}
+ const rich=cashOf(p)>=150000;
+ ask(p,{title:sev?'큰 병이 들었다':'독감에 걸렸다',body:sev?'열이 내리지 않고 몸을 가눌 수 없다. 쓰러지기 전에 결정해야 한다.':'몸살과 기침이 며칠째 이어진다.',opts:[
+  rich?{l:'명의를 불러 치료한다 (40,000료)',s:'가장 좋은 치료. 후유증 없이 낫는다',a:3,f:p=>{spend(p,40000);add(p,'health',sev?-3:0);L(p,'이름난 명의를 집으로 불렀다. 돈이 힘이 된다는 사실을 새삼 느꼈다.','g')}}:null,
+  {l:`좋은 의원에게 간다 (${sev?'15,000':'4,000'}료)`,s:'빠르게 낫는다',a:4,f:p=>{spend(p,sev?15000:4000);add(p,'health',sev?-6:-2);L(p,'용한 의원에게 치료받고 금세 자리에서 일어났다.','n')}},
+  {l:`동네 의원에게 간다 (${sev?'5,000':'1,500'}료)`,s:'적당히 낫지만 후유증이 남을 수 있다',a:3,f:p=>{spend(p,sev?5000:1500);add(p,'health',sev?-13:-5);if(sev&&ch(.2)){p.flags.chronic=true;L(p,'병은 나았지만 몸이 예전 같지 않다.','b')}else L(p,'동네 의원의 약으로 한참 만에 일어났다.','n')}},
+  {l:'약 없이 버틴다 (무료)',s:'돈은 아끼지만 몸이 상하고 위험하다',a:1,f:p=>{add(p,'health',-(sev?26:11));tr(p,'thrifty',.3);if(sev&&ch(.09+(p.age>50?.1:0))){die(p,'illness','병을 이기지 못하고 세상을 떠났다.');return}if(sev&&ch(.4)){p.flags.chronic=true;L(p,'며칠을 혼자 앓다 겨우 일어났다. 몸 한구석이 영 시원치 않다.','b')}else L(p,'혼자 끙끙 앓으며 버텼다. 몸이 오래 무거웠다.','b')}}
+ ].filter(Boolean)});
+}});
+swap(EV_ANY,'disaster',{k:'disaster',w:()=>0,f:()=>{}});
+{const e=EV_CROSS.find(x=>x.k==='lateNinja');if(e)e.w=()=>0}
+EV_MONEY.push(
+ {k:'invest',cd:8,w:p=>p.age>=24&&p.track!=='rogue'&&cashOf(p)>=200000?1.2:0,f:p=>{
+  ask(p,{title:'투자 제안',body:'상인 조합에서 큰 거래에 함께 출자하자는 제안이 왔다. 성공하면 크게 불지만 실패하면 큰 손해다.',opts:[
+   {l:'출자한다 (80,000료)',s:'넉넉한 형편이니 감당할 수 있다',a:3,f:p=>{spend(p,80000);tr(p,'ambit',.4);if(ch(.6)){p.money+=rnd(130000,260000);L(p,'출자한 거래가 성공해 큰 이익을 남겼다. 돈이 돈을 부르는 것을 실감했다.','m')}else{add(p,'happy',-4);L(p,'거래가 틀어져 출자금을 거의 잃었다.','b')}}},
+   {l:'사양한다',s:'',a:3,f:p=>{tr(p,'cautious',.4);L(p,'위험한 투자는 사양했다.','n')}}]})}},
+ {k:'mansion',once:true,w:p=>p.age>=30&&p.track!=='rogue'&&cashOf(p)>=350000?2:0,f:p=>{
+  ask(p,{title:'큰 저택',body:'넉넉한 형편에 어울리는 큰 저택을 지을 수 있다.',opts:[
+   {l:'저택을 짓는다 (150,000료)',s:'마음이 놓이고 체면이 선다',a:3,f:p=>{spend(p,150000);p.flags.house=true;add(p,'happy',8);add(p,'bond',3);ach(p,'큰 저택');L(p,'정원이 딸린 큰 저택을 지었다. 사람들의 시선이 달라졌다.','m')}},
+   {l:'지금처럼 소박하게 산다',s:'',a:3,f:p=>{tr(p,'thrifty',.5);L(p,'큰 집 대신 소박한 삶을 택했다.','n')}}]})}}
+);
+// 아이 열병: 돈이 없으면 선택지가 막힌다
+swap(EV_KIDS,'ks1',{k:'ks1',cd:4,w:p=>kidsMine(p).some(k=>k.age>=1&&k.age<13)?3:0,f:p=>{const k=pick(kidsMine(p).filter(k=>k.age>=1&&k.age<13));const nm=k.name.split(' ')[1];
+ ask(p,{title:`${nm}의 열병`,body:`${nm}${(nm.charCodeAt(nm.length-1)-0xAC00)%28?'이':'가'} 며칠째 열이 내리지 않는다.`,opts:[
+  {l:'좋은 의원에게 맡긴다 (12,000료)',s:'비싸지만 안전하다',a:3,f:p=>{spend(p,12000);add(p,'bond',3);L(p,`${nm}를 용한 의원에게 데려갔다. 열이 내리고 아이가 웃었다.`.replace(`${nm}를`,jo(nm,'을를')),'g')}},
+  {l:'동네 의원에게 보인다 (5,000료)',s:'그럭저럭 믿을 만하다',a:3,f:p=>{spend(p,5000);if(ch(.03)){kidDie(p,k,ctxOf(p),'열병을 이기지 못하고 세상을 떠났다.');return}add(p,'happy',-2);L(p,`동네 의원의 약을 먹이고 며칠 밤을 새웠다. 아이는 고비를 넘겼다.`,'n')}},
+  {l:'약초로 버틴다 (무료)',s:'돈은 들지 않지만 위험하다',a:2,f:p=>{if(ch(.1+(k.age<3?.1:0))){kidDie(p,k,ctxOf(p),'병을 이기지 못하고 세상을 떠났다.')}else{add(p,'happy',-5);add(p,'health',-3);L(p,`약초를 달여 밤새 간호했다. 아이는 겨우 고비를 넘겼다. 식은땀이 났다.`,'n')}}}]})}});
+
+// 민간 사건의 손실 완화(가난이 기본값이 되지 않도록)
+['bad','fire','gamble','tax'].forEach(k=>{const e=EV_CIV.find(x=>x.k===k);if(e){const f=e.f;e.f=(p,c)=>{const m0=p.money;f(p,c);if(p.money<m0&&!p.dead)p.money+=Math.round((m0-p.money)*.5)}}});
+{const g=EV_CIV.find(x=>x.k==='good');if(g)g.w=()=>6}
+// ---------- 늦깎이 닌자 ----------
+function lateNinjaTick(p,c){
+ if(p.track!=='civ'||p.age<16||p.age>34||p.pot<20||!NN(p).hid||(p.flags.lateN||0)>=2||p.flags.hidden||p.q.length)return;
+ if(!ch(.022+c.lv*.025+(p.pot>=40?.02:0)))return;
+ const e=EV_CROSS.find(x=>x.k==='lateNinja');if(!e)return;
+ p.flags.lateN=(p.flags.lateN||0)+1;e.f(p);
+}
+// ---------- 연 단위 훅 ----------
+const _step24=stepYear;
+stepYear=function(p,...r){
+ if(p.focus==='train'&&!trainOK(p))p.focus='balance';
+ const o=_step24(p,...r);
+ if(!p.dead){try{
+  const c=ctxOf(p);
+  civWarTick(p,c);if(p.dead)return o;
+  if(ch(.026))disaster24(p,c);if(p.dead)return o;
+  debtTick(p);if(p.dead)return o;
+  lateNinjaTick(p,c);
+ }catch(e){(globalThis.__e24=globalThis.__e24||[]).push(e.stack)}}
+ return o;
+};
+
+// ================= ENGINE 25: 부모 묘소 · 탈주닌자의 단절 · 추적닌자의 위협 =================
+const rogueLike=p=>p.track==='rogue'||!!p.flags.hidden;
+// ---------- 부모 방문 / 묘소 ----------
+swap(EV_ANY,'parentvisit',{k:'parentvisit',cd:3,w:p=>!rogueLike(p)&&p.age>18&&p.fam.parents.some(q=>!q.dead&&!q.unk)?2:0,f:p=>{
+ const q=pick(p.fam.parents.filter(x=>!x.dead&&!x.unk));const rel=q.rel==='어머니'?'어머니':'아버지';
+ L(p,`오랜만에 ${rel} 댁을 찾았다. ${rel==='어머니'?'어머니가 차려 준 밥이 여전히 맛있었다.':'아버지는 말수가 적었지만 내 몫의 잔을 먼저 채워 주었다.'}`,'g');add(p,'bond',4);add(p,'happy',3)}});
+EV_ANY.push({k:'graveVisit',cd:4,w:p=>!rogueLike(p)&&p.age>18&&p.fam.parents.some(q=>q.dead)?1.6:0,f:p=>{
+ const d=p.fam.parents.filter(q=>q.dead);const dead=d.length>1?'부모님':d[0].rel;
+ L(p,pick([`${dead} 묘소를 찾았다. 비석을 닦고 꽃을 올린 뒤 한참을 말없이 서 있었다.`,`${dead} 묘소를 찾아 술 한 잔을 올렸다. 바람 소리만 들렸다.`,`${dead} 기일에 묘소를 찾았다. 요즘 있었던 일들을 낮은 목소리로 들려 드렸다.`]),'n');add(p,'happy',-1);add(p,'bond',2)}});
+// ---------- 탈주닌자: 마을과의 연결 끊기 ----------
+// 소환/후속 이벤트: 허용 목록 외에는 탈주 뒤 발동하지 않는다
+{const WL=['drinkWorse','loveAgain','firstChild','birth','griefYear','afterDivorce','sepOutcome','affairFind','trustCheck','disAfter','migHunter','orgFollow','orgRevenge','resFlee','betrayHaunt','hunterGrief'];
+ Object.keys(LATER).forEach(k=>{if(WL.includes(k))return;const f=LATER[k];LATER[k]=function(p,...a){if(rogueLike(p))return;return f.call(this,p,...a)}})}
+// 마을 사건 풀 차단
+const _rp25=runPool;
+runPool=function(p,c,pool,n){
+ if(rogueLike(p)&&(pool===EV_MURDER||pool===EV_GRUDGE||pool===EV_CAMEO))return;
+ if(rogueLike(p)&&pool===EV_KIDS){pool=pool.filter(e=>e.k!=='ks3')}
+ return _rp25(p,c,pool,n);
+};
+// 상담 등 마을 사람에게 기대는 선택지 제거
+const _ask25=ask;
+ask=function(p,o){
+ if(rogueLike(p)&&o.opts){
+  const bad=/상담을 받는다|상담사|가까운 사람에게 털어놓는다|다른 사람에게 털어놓는다|속을 털어놓/;
+  const ok=o.opts.filter(x=>!bad.test(x.l||''));
+  if(ok.length>=2)o.opts=ok;
+  // 낯선 마을의 밤: 추적닌자에게 당할 위험
+  if(/낯선 마을의 밤/.test(o.title)){
+   o.opts.forEach(x=>{const f=x.f;const pr=/고급/.test(x.l)?.05:/야영/.test(x.l)?.04:.03;const where=/야영/.test(x.l)?'camp':'inn';x.f=p=>{if(ch(pr+Math.min(.04,(p.bounty||0)/6e6))){hunterKill(p,where);return}f(p)}});
+  }
+ }
+ _ask25(p,o);
+};
+function hunterKill(p,where){
+ const t={inn:['잠든 사이 추적닌자가 숙소를 덮쳤다. 눈을 떴을 때는 이미 늦은 뒤였다.','숙박부의 가명을 의심한 추적닌자가 한밤중에 방문을 열었다. 비명도 지르지 못했다.'],camp:['야영지의 모닥불을 보고 따라온 추적닌자에게 목숨을 잃었다.','잠든 사이 어둠 속에서 다가온 추적닌자의 칼날을 피하지 못했다.'],road:['길을 가던 중 추적닌자의 매복에 걸려 목숨을 잃었다.','산길 모퉁이에서 기다리던 추적닌자에게 쓰러졌다. 끝내 도망치지 못했다.','국경을 몇 개 넘었지만 추적닌자는 끝내 따라붙었다. 그것이 마지막 밤이었다.']}[where]||['끝내 추적닌자에게 붙잡혀 목숨을 잃었다.'];
+ die(p,'hunted',pick(t));
+}
+// ---------- 추적닌자에게 가까운 사람을 잃다 ----------
+function hunterFamily(p){
+ const F=p.fam,cand=[];
+ if(F.spouse&&F.spouse.alive&&!F.spouse.left)cand.push({t:'sp'});
+ kidsMine(p).filter(k=>k.alive).forEach(k=>cand.push({t:'kid',k}));
+ if(p.love)cand.push({t:'love'});
+ if(!cand.length)return false;
+ const v=pick(cand);let who,txt;
+ if(v.t==='sp'){const s=F.spouse;s.knew=s.knew!=null?s.knew:ch(.4);s.alive=false;who='배우자';
+  txt=s.knew?`추적닌자가 내 행방을 캐다 배우자 ${jo(s.name,'을를')} 해쳤다. 모든 것을 알고도 곁을 지켜 준 사람이었다.`:`추적닌자가 내 행방을 캐다 배우자 ${jo(s.name,'을를')} 해쳤다. 내가 탈주닌자라는 사실조차 몰랐던 사람이었다.`;L(p,txt,'b')}
+ else if(v.t==='kid'){who='아이';L(p,`추적닌자가 나를 찾아 집을 뒤졌다. 아이는 아버지가 왜 쫓기는지 알지 못했다.`.replace('아버지가',p.sex==='M'?'아버지가':'어머니가'),'b');kidDie(p,v.k,ctxOf(p),'추적닌자에게 목숨을 잃었다.')}
+ else{who='연인';const l=p.love;L(p,`추적닌자가 내 행방을 캐다 ${jo(l.name,'을를')} 해쳤다. 내가 누구인지도 모르던 사람이었다.`,'b');p.love=null}
+ add(p,'happy',-28);add(p,'bond',-12);p.flags.trauma=(p.flags.trauma||0)+2;p.flags.hunterGrudge=true;tr(p,'defiant',.6);
+ ask(p,{title:'치밀어 오르는 분노',body:`내가 도망쳤기 때문에 ${who}이(가) 죽었다는 생각이 가시지 않는다. 분노와 죄책감이 뒤엉킨다.`,opts:[
+  {l:'추적닌자를 찾아 복수한다',s:'이길 수도, 죽을 수도 있다',a:2,f:p=>{
+    const me=skAvg(p)+p.tal*.15-(p.st.health<50?8:0),s=hunterStr(p)+6;
+    if(ch(cl(.45+(me-s)/90,.12,.8))){p.kills+=1;p.bounty=(p.bounty||0)+100000;L(p,'어둠 속에서 추적닌자를 쓰러뜨렸다. 분노는 가라앉았지만 허무함이 밀려왔다.','m');add(p,'happy',-2);tr(p,'cold',.5)}
+    else if(ch(.55)){die(p,'hunted','복수를 위해 추적닌자를 쫓다 오히려 쓰러졌다.')}
+    else{add(p,'health',-rnd(15,30));L(p,'복수에 실패하고 중상을 입은 채 달아났다. 분노만 더 깊어졌다.','b')}}},
+  {l:'이름을 버리고 더 깊이 숨는다',s:'다시는 누구도 휘말리게 하지 않겠다',a:4,f:p=>{add(p,'bond',-4);tr(p,'cold',.6);p.bounty=Math.max(0,(p.bounty||0)-50000);L(p,'이름도 얼굴도 바꾸고 더 먼 곳으로 숨어들었다. 이제 누구에게도 마음을 열지 않겠다고 다짐했다.','n')}},
+  {l:'술로 달랜다',s:'잠시 잊을 수 있지만 몸과 마음이 상한다',a:3,f:p=>{p.flags.alcohol=true;dep(p,18);add(p,'health',-5);L(p,'술로 하루하루를 버텼다. 취할수록 그 얼굴이 또렷해졌다.','b')}},
+  {l:'혼자 삭인다',s:'',a:3,f:p=>{dep(p,10);add(p,'happy',-6);tr(p,'cold',.4);L(p,'아무에게도 말하지 못하고 혼자 삭였다. 밤마다 이를 악물었다.','b')}}
+ ]});
+ return true;
+}
+// ---------- 풍문 처리 / 연 단위 훅 ----------
+const RUM_SUF=['진짜인지는 알 수 없었다.','어디까지가 사실인지는 모를 일이다.','확인할 방법은 없었다.'];
+const _step25=stepYear;
+stepYear=function(p,...r){
+ const wasR=rogueLike(p),L0=p.log.length;
+ const o=_step25(p,...r);
+ if(wasR||rogueLike(p)){
+  for(let j=L0;j<p.log.length;j++){const l=p.log[j];if(/^풍문으로/.test(l.t)&&!/알 수 없|모를 일|확인할|진짜인지/.test(l.t)&&!/부고|세상을 떠났/.test(l.t))l.t+=' '+pick(RUM_SUF)}
+  if(!p.dead&&p.track==='rogue'&&p.age>=14){try{
+   if(ch(.014+Math.min(.04,(p.bounty||0)/5e6))){hunterKill(p,'road')}
+   else if(ch(.02))hunterFamily(p);
+  }catch(e){(globalThis.__e24=globalThis.__e24||[]).push(e.stack)}}
+ }
+ return o;
+};
+
 </script></body></html>
