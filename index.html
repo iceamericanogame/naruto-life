@@ -3322,7 +3322,7 @@ function beginLife(){S.busy=false;S.vis=S.p.log.length;show('life');renderLife()
 function bar(label,v){return `<div class="bar"><span>${label}</span><i><u style="width:${Math.round(v)}%"></u></i><em>${Math.round(v)}</em></div>`}
 function renderLife(){
  const p=S.p,c=ctxOf(p),N=NN(p);
- const ninja=p.track==='academy'||isNin(p)||p.track==='retired';
+ const ninja=p.track==='academy'||isNin(p)||(p.track==='retired'&&RANKS.includes(p.prevLabel)&&p.rank>=1);
  const vis=p.log.slice(0,Math.min(S.vis,p.log.length)).reverse();const shown=vis.slice(0,300);
  const peers=S.peers.map(q=>`<div class="peer ${q.dead?'dead':''}"><div class="k" style="background:${NATIONS[q.nid].col}">${NATIONS[q.nid].kj}</div><div>${esc(q.name)} · ${q.age}세<span>${NATIONS[q.nid].name} · ${statusText(q)}</span></div></div>`).join('');
  const mp=Array.from({length:Math.max(80,p.map.length)},(_,i)=>`<i class="${i<p.map.length?'ph-'+p.map[i]:''} ${i===p.map.length-1?'cur':''}" title="${i}세"></i>`).join('');
@@ -3561,7 +3561,7 @@ $('#peekbtn').onclick=()=>{$('#sheetbg').classList.remove('peek');$('#peekbar').
 <script>
 // ================= ENGINE 24: 민간인 시점 · 자연재해 · 금전 압박 · 초점 정리 =================
 const civLike=p=>p.track==='civ'||p.track==='child';
-function trainOK(p){return p.track==='academy'||p.track==='ninja'||p.track==='rogue'||p.track==='retired'||(p.track==='child'&&NN(p).hid&&p.age>=6)}
+function trainOK(p){return p.track==='academy'||p.track==='ninja'||p.track==='rogue'||(p.track==='retired'&&RANKS.includes(p.prevLabel)&&p.rank>=1)||(p.track==='child'&&NN(p).hid&&p.age>=6)}
 function focusKeys(p){return Object.keys(FOCI).filter(k=>k!=='train'||trainOK(p))}
 const cashOf=p=>p.age<16?p.famMoney:p.money;
 function creditOf(p){
