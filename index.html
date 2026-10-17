@@ -304,12 +304,9 @@ const RANKS=['아카데미 학생','하급닌자','중급닌자','상급닌자']
 const ROLES={field:'전투닌자',medic:'의료닌자',intel:'정보부 닌자',inst:'아카데미 교관',sensor:'감지닌자',anbu:'암부(暗部)',root:'뿌리(根)',puppet:'인형술사',hunter:'추적닌자',sealer:'봉인술사',elder:'마을 고문',kage:'카게'};
 
 const ERAS=[
- {id:'e3',n:'제3차 인계대전기',y:-14,d:'대전이 일어나기 전의 전후 복구기부터 대전 한복판까지, 폭넓은 시기에 태어난다.'},
+ {id:'e3',n:'제3차 인계대전 시기',y:-14,d:'대전이 일어나기 전의 전후 복구기부터 대전 한복판까지, 폭넓은 시기에 태어난다.'},
  {id:'e4',n:'구미 습격의 해',y:0,d:'나루토가 태어난 해. 나뭇잎 마을에 아홉 꼬리가 나타난 해에 태어난다.'},
- {id:'e5',n:'평화로운 유년기',y:4,d:'3차 대전이 끝난 뒤의 불안한 평화. 우치하 사건, 중급닌자 시험, 나뭇잎 붕괴 작전을 어린 눈으로 보게 된다.'},
- {id:'e6',n:'아카츠키가 움직이는 시대',y:13,d:'아카츠키의 그림자가 드리운 시대. 페인의 습격과 5카게 회담, 대전이 코앞이다.'},
- {id:'e7',n:'대전 이후',y:19,d:'제4차 인계대전이 끝난 뒤, 5대국이 손을 잡은 새로운 평화의 시대.'},
- {id:'e8',n:'보루토 시대',y:30,d:'과학 닌자도구와 열차, 방송, 통신 기기가 닌자의 일상을 바꾸는 시대. 호카게 나루토의 시대.'},
+ {id:'e7',n:'제4차 인계대전 이후',y:19,d:'제4차 인계대전이 끝난 뒤, 5대국이 손을 잡은 새로운 평화의 시대. 카카시의 호카게 시대에서 과학 닌자도구가 퍼지는 시대까지 폭넓게 태어난다.'},
  {id:'any',n:'아무 시대',y:0,d:'어느 시대에 태어날지는 운에 맡긴다.'}
 ];
 
@@ -322,7 +319,7 @@ function eraName(y){
  if(y<=-2)return '제3차 인계대전';
  if(y===-1)return '전쟁 직후';
  if(y===0)return '구미 습격의 해';
- if(y<=11)return '3차 대전 이후의 평화';
+ if(y<=11)return '제3차 인계대전 이후의 평화';
  if(y===12)return '나뭇잎 붕괴 작전의 해';
  if(y<=16)return '아카츠키의 그림자';
  if(y===17)return '제4차 인계대전';
@@ -383,7 +380,7 @@ function mkName(sex,clan){const s=clan?CLANS[clan].n:pick(SURN);return s+' '+pic
 function mkPerson(sex,clan){return {name:mkName(sex,clan),sex}}
 const PNAME=p=>p.name.split(' ')[1]||p.name; // 이름(성 제외)
 
-function eraYear(id){const e=ERAS.find(x=>x.id===id);if(!e||e.id==='any')return rnd(-32,40);if(e.id==='e3')return rnd(-32,-3);return e.y+rnd(0,1)}
+function eraYear(id){const e=ERAS.find(x=>x.id===id);if(!e||e.id==='any')return rnd(-32,40);if(e.id==='e3')return rnd(-32,-3);if(e.id==='e7')return rnd(19,38);return e.y+rnd(0,1)}
 function pickNation(y,hidOnly){return wp(NID,id=>(NATIONS[id].from<=y&&y<=NATIONS[id].to&&(!hidOnly||NATIONS[id].hid&&NATIONS[id].vs>0))?NATIONS[id].w:0)}
 function clanPick(nid,y){
  const N=NATIONS[nid];if(!ch(N.clanP))return null;
@@ -3477,7 +3474,7 @@ function openGuide(tab){
  if(tab==='nat')h+=NID.map(id=>{const N=NATIONS[id];return `<div class="nrow"><div class="k" style="background:${N.col}">${N.kj}</div><div><b>${N.name}${N.vil?' · '+N.vil:''}</b><br>${N.desc}${N.ldr?`<br><span style="color:var(--mute)">지도자 호칭: ${N.ldr}</span>`:''}</div></div>`}).join('');
  if(tab==='rank')h+=`<div style="font-size:14.5px"><p><b>닌자의 길</b><br>아카데미 학생 → 하급닌자 → 중급닌자 → 상급닌자. 하급닌자는 3인 1조 팀에서 D·C급 임무를 맡고, 중급닌자 선발시험이나 전공으로 중급닌자가 되면 팀장이 됩니다. 상급닌자는 마을의 정예이고, 한 분야에 특출한 사람은 특별 상급닌자가 되기도 합니다.</p><p><b>전문 분야</b><br>전투닌자, 의료닌자, 정보부, 아카데미 교관, 감지닌자, 인형술사(모래 마을), 봉인술사, 추적닌자.</p><p><b>암부(暗部)</b><br>카게 직속의 비밀 정예. 암살과 호위를 맡고, 이름과 관계를 잃습니다.</p><p><b>탈주닌자</b><br>이마 보호대에 선을 긋고 마을을 떠난 자. 현상금이 걸리고 추적닌자에게 쫓깁니다.</p><p><b>민간인</b><br>농부, 어부, 장인, 가게 주인, 의원, 여관 주인, 상인, 사무라이(철의 나라) 등. 세상 대부분의 사람들입니다. 전쟁이 나면 징집되거나 피난길에 오르기도 합니다.</p><p><b>임무 등급</b><br>D(잡무) → C(호위·순찰) → B → A → S(국가 기밀급).</p></div>`;
  if(tab==='ele')h+=NK.map(n=>`<div class="nrow"><div class="k" style="background:${NATURE[n].col}">${NATURE[n].k}</div><div><b>${NATURE[n].n} (${NATURE[n].j})</b><br>${NATURE[n].d}</div></div>`).join('')+`<p style="font-size:14px">상성: 불 > 바람 > 번개 > 흙 > 물 > 불</p>`+COMBOS.map(c=>`<div class="nrow"><div><b>${c.n}</b> (${c.a.map(x=>NATURE[x].n).join('+')})<br>${c.d}</div></div>`).join('')+`<p class="hint">두 속성을 합친 혈계한계는 매우 드뭅니다.</p>`;
- if(tab==='time'){const ev=[[-14,'제3차 인계대전'],[-2,'3차 대전 종결'],[0,'구미 습격, 나루토 탄생'],[7,'우치하 일족 사건'],[12,'중급닌자 시험과 나뭇잎 붕괴 작전'],[14,'안개 마을 피의 안개 시대 종결'],[16,'페인의 습격'],[17,'5카게 회담과 제4차 인계대전'],[17,'대전 종결 몇 달 뒤, 카카시 6대 호카게 취임'],[18,'닌자 연합 체제'],[21,'철도·통신망 정비 합의'],[27,'과학 닌자도구 개발'],[30,'나루토 7대 호카게 취임'],[32,'보루토 시대의 위협']];h+=`<ul class="tl">${ev.map(([y,t])=>`<li>${t}<small>${yearLabel(y)}</small></li>`).join('')}</ul><p class="hint">시점은 나루토가 태어난 해를 0으로 둔 대략적인 기준입니다.</p>`}
+ if(tab==='time'){const ev=[[-14,'제3차 인계대전'],[-2,'제3차 인계대전 종결'],[0,'구미 습격, 나루토 탄생'],[7,'우치하 일족 사건'],[12,'중급닌자 시험과 나뭇잎 붕괴 작전'],[14,'안개 마을 피의 안개 시대 종결'],[16,'페인의 습격'],[17,'5카게 회담과 제4차 인계대전'],[17,'대전 종결 몇 달 뒤, 카카시 6대 호카게 취임'],[18,'닌자 연합 체제'],[21,'철도·통신망 정비 합의'],[27,'과학 닌자도구 개발'],[30,'나루토 7대 호카게 취임'],[32,'보루토 시대의 위협']];h+=`<ul class="tl">${ev.map(([y,t])=>`<li>${t}<small>${yearLabel(y)}</small></li>`).join('')}</ul><p class="hint">시점은 나루토가 태어난 해를 0으로 둔 대략적인 기준입니다.</p>`}
  h+=`<button class="btn sec" id="cl" style="margin-top:14px">닫기</button>`;
  openSheet(h);
  document.querySelectorAll('#sheet [data-t]').forEach(b=>b.onclick=()=>openGuide(b.dataset.t));
